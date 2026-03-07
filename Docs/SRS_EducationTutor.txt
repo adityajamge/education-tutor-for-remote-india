@@ -1,0 +1,352 @@
+Software Requirements Specification (SRS)
+Project Title
+
+Education Tutor for Remote India
+
+Developed By
+
+Aditya Jamge
+
+Omanand Swami
+
+Pratik Patil
+
+Program
+
+Developed as part of the Intel Unnati Industrial Training Program in collaboration with HPE.
+
+1. Introduction
+1.1 Purpose
+
+The purpose of this project is to develop an AI-powered tutoring system capable of assisting students by answering questions based on state-board textbook content.
+
+Many students in rural areas face challenges such as limited internet connectivity, high API costs, and slow response times when interacting with large AI models. This system addresses these challenges by implementing efficient context compression techniques to minimize data transfer and API costs.
+
+The system uses ScaleDown API to compress the contextual information retrieved from textbooks before sending it to a Large Language Model (LLM). This ensures that only relevant information is used for generating answers, improving response efficiency and reducing operational costs.
+
+1.2 Scope
+
+The Education Tutor for Remote India system will enable students to:
+
+Access and query information from state-board textbooks
+
+Ask questions related to textbook topics
+
+Receive AI-generated explanations aligned with curriculum content
+
+View context-aware answers generated from relevant textbook sections
+
+The system will reduce unnecessary data transfer by compressing context using ScaleDown, making it suitable for low-bandwidth environments.
+
+The platform will be implemented as a web-based application with:
+
+React.js frontend
+
+Node.js + Express.js backend
+
+Integration with ScaleDown API and LLM services
+
+1.3 Definitions, Acronyms, and Abbreviations
+Term	Description
+LLM	Large Language Model used for generating answers
+API	Application Programming Interface
+RAG	Retrieval-Augmented Generation
+Context Pruning	Removing irrelevant text before sending data to an LLM
+Token	Basic unit of text processed by an LLM
+ScaleDown	API used to compress context and reduce token usage
+Backend	Server-side logic handling data processing
+Frontend	User interface interacting with the user
+1.4 Overview
+
+This document describes the functional and non-functional requirements of the Education Tutor for Remote India system. It includes system architecture, user interaction flow, external interfaces, and performance expectations.
+
+2. Overall Description
+2.1 Product Perspective
+
+The system is designed as a web-based AI tutoring platform that allows students to ask questions related to textbook content.
+
+The system architecture includes:
+
+Frontend interface (React.js) for user interaction
+
+Backend server (Node.js + Express.js) for handling API requests
+
+Textbook content retrieval module
+
+Context compression using ScaleDown
+
+LLM integration for answer generation
+
+The application will be deployed using modern cloud services such as Render and Vercel.
+
+2.2 Product Functions
+
+The system will perform the following functions:
+
+Accept questions from users through the web interface
+
+Retrieve relevant textbook sections
+
+Compress contextual information using ScaleDown API
+
+Send compressed context to an LLM
+
+Generate and return answers to the user
+
+Display token usage statistics and compression results
+
+2.3 User Classes and Characteristics
+Students
+
+Primary users of the system.
+
+Characteristics:
+
+Basic computer literacy
+
+Access the system via web browser
+
+May have limited internet connectivity
+
+Developers / Administrators
+
+Responsible for development and maintenance of the system.
+
+2.4 Operating Environment
+
+The system will operate in the following environment:
+
+Frontend
+
+React.js
+
+JavaScript
+
+HTML/CSS
+
+Web browser
+
+Backend
+
+Node.js
+
+Express.js
+
+REST APIs
+
+External Services
+
+ScaleDown API
+
+LLM API (Gemini / OpenAI)
+
+Deployment Platforms
+
+Frontend: Vercel
+
+Backend: Render
+
+2.5 Design and Implementation Constraints
+
+The system must satisfy the following constraints:
+
+Must process large textbook PDF files
+
+Must avoid sending the entire textbook context to the LLM
+
+Must demonstrate token reduction using ScaleDown
+
+Must provide a simple and accessible user interface
+
+Must maintain secure handling of API keys
+
+2.6 Assumptions and Dependencies
+
+The system assumes:
+
+Textbooks are available in PDF format
+
+Internet connectivity is available
+
+ScaleDown API service is accessible
+
+LLM services (Gemini/OpenAI) are available
+
+3. System Features
+3.1 Question Input Interface
+Description
+
+Allows users to enter questions related to textbook content.
+
+Input
+
+User question
+
+Output
+
+System processes question and retrieves relevant information
+
+3.2 Textbook Context Retrieval
+Description
+
+The system retrieves relevant sections of textbook content based on the user's query.
+
+Processing
+
+Search through stored textbook content
+
+Identify relevant text segments
+
+Output
+
+Retrieved context segments
+
+3.3 Context Compression
+Description
+
+Reduces irrelevant context before sending it to the language model.
+
+Input
+
+Retrieved context
+
+User query
+
+Processing
+
+Send context to ScaleDown API
+
+Receive compressed context
+
+Output
+
+Optimized context with reduced tokens
+
+3.4 AI Answer Generation
+Description
+
+Generates answers based on the compressed context and user query.
+
+Processing
+
+Send compressed context to LLM
+
+Receive generated explanation
+
+Output
+
+AI-generated answer
+
+3.5 Response Display
+Description
+
+Displays the generated answer and relevant statistics.
+
+Output
+
+AI-generated explanation
+
+Token reduction metrics
+
+Response latency information
+
+4. External Interface Requirements
+4.1 User Interface
+
+The web interface will include:
+
+Question input field
+
+Submit button
+
+Answer display section
+
+Token usage statistics
+
+The interface will be designed for simplicity and accessibility.
+
+4.2 Software Interfaces
+
+The system will interact with the following external APIs:
+
+ScaleDown API
+
+Used for context compression before sending prompts to LLMs.
+
+LLM API
+
+Used to generate answers from compressed context.
+
+PDF Processing Libraries
+
+Used for extracting text from textbook files.
+
+4.3 Hardware Interfaces
+
+The system requires no specialized hardware and will run on standard computers or cloud servers.
+
+5. Non-Functional Requirements
+5.1 Performance
+
+Average response time should be under 5 seconds.
+
+Context compression should reduce token usage significantly.
+
+5.2 Reliability
+
+The system should handle API errors gracefully.
+
+Invalid user inputs should not crash the system.
+
+5.3 Usability
+
+Interface should be simple and intuitive.
+
+Minimal steps required to ask questions.
+
+5.4 Security
+
+API keys must be stored in secure environment variables.
+
+Sensitive information must not be exposed to the client.
+
+5.5 Scalability
+
+The system should allow:
+
+addition of new textbooks
+
+integration of additional LLM models
+
+future expansion to mobile platforms
+
+6. System Architecture Overview
+
+The system workflow is illustrated below:
+
+User (React Frontend)
+        ↓
+Express Backend API
+        ↓
+Retrieve relevant textbook sections
+        ↓
+ScaleDown API (Context Compression)
+        ↓
+LLM API (Gemini / OpenAI)
+        ↓
+Generate answer
+        ↓
+Return response to frontend
+7. Future Enhancements
+
+Possible improvements include:
+
+Multi-language support
+
+Voice-based question input
+
+Mobile application interface
+
+Offline caching for frequently asked questions
+
+Personalized learning recommendations
