@@ -3,6 +3,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import ThemeToggle from './components/ThemeToggle';
 import WelcomeScreen from './components/WelcomeScreen';
+import SplashScreen from './components/SplashScreen';
 import ChatArea, { type Message, TypingIndicator } from './components/ChatArea';
 import ChatInput from './components/ChatInput';
 import TokenStatsBar from './components/TokenStatsBar';
@@ -10,6 +11,7 @@ import { useDocuments } from './hooks/useDocuments';
 import './App.css';
 
 function AppContent() {
+  const [showSplash, setShowSplash] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -56,6 +58,10 @@ function AppContent() {
   const handleQuestionSelect = useCallback((question: string) => {
     sendMessage(question);
   }, [sendMessage]);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
 
   return (
     <div className="app" id="app-root">
