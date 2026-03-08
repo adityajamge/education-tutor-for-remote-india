@@ -1068,6 +1068,155 @@ body {
 }
 
 /* ============================================
+   PDF PANEL
+   ============================================ */
+
+.pdf-panel {
+    padding: 12px 24px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-secondary);
+}
+
+.pdf-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pdf-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pdf-panel__clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.pdf-panel__clear-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--accent-danger);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.pdf-panel__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.pdf-panel__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+}
+
+.pdf-panel__item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+}
+
+.pdf-panel__item-name {
+    font-weight: 500;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pdf-panel__item-pages {
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+}
+
+.pdf-panel__item-remove {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.pdf-panel__item-remove:hover {
+    color: var(--accent-danger);
+}
+
+.pdf-panel__hidden-input {
+    display: none;
+}
+
+.pdf-panel__upload {
+    border: 1px dashed var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: color-mix(in srgb, var(--accent-primary) 3%, transparent);
+}
+
+.pdf-panel__upload:hover {
+    border-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+}
+
+.pdf-panel__upload-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.pdf-panel__spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.pdf-panel__error {
+    color: var(--accent-danger);
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: var(--radius-sm);
+}
+
+/* ============================================
    TOKEN STATS BAR
    ============================================ */
 

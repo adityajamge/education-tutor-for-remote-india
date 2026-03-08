@@ -1,0 +1,304 @@
+# 📄 PDF Upload & Session-Based Text Storage — Implementation Plan (v2)
+
+## What Changed from v1
+
+> [!IMPORTANT]
+> **v1** stored a single [text](file:///d:/Projects/education-tutor-for-remote-india/client/src/context/ThemeContext.tsx#5-9) string per session.
+> **v2** stores an **array of documents** per session — users can upload multiple PDFs at once or one by one over time.
+
+---
+
+## 🧠 Core Data Structure Change
+
+### ❌ Old (v1) — Single PDF per session
+```typescript
+Map<sessionId, { text: string, uploadedAt: number }>
+```
+
+### ✅ New (v2) — Multiple PDFs per session
+```typescript
+Map<sessionId, {
+  documents: Array<{
+    id: string,           // unique ID per document (uuid)
+    fileName: string,     // "physics_ch3.pdf"
+    text: string,         // extracted text from this PDF
+    pageCount: number,    // number of pages
+    uploadedAt: number    // timestamp
+  }>,
+  createdAt: number       // when session started
+}>
+```
+
+### Example in Memory:
+```
+sessionId: "abc123" → {
+  documents: [
+    { id: "doc-1", fileName: "physics.pdf",  text: "Force is...",     pageCount: 45,  uploadedAt: 1710000 },
+    { id: "doc-2", fileName: "chemistry.pdf", text: "Atoms are...",   pageCount: 30,  uploadedAt: 1710050 },
+    { id: "doc-3", fileName: "math.pdf",      text: "Algebra is...",  pageCount: 60,  uploadedAt: 1710100 }
+  ],
+  createdAt: 1710000
+}
+```
+
+---
+
+## 🏗️ Architecture Diagram
+
+```mermaid
+sequenceDiagram
+    participant Browser as Frontend (React)
+    participant Server as Backend (Express)
+    participant Memory as In-Memory Store (Map)
+    participant PdfParse as pdf-parse Library
+
+    Note over Browser: User selects 1 or more PDFs
+
+    Browser->>Server: POST /api/upload-pdf (multipart: multiple files)
+    Note right of Server: multer.array('pdfs') receives all files as Buffers
+
+    loop For each uploaded file
+        Server->>PdfParse: pdfParse(fileBuffer)
+        PdfParse-->>Server: { text, numpages }
+        Server->>Memory: session.documents.push({ id, fileName, text, pageCount })
+    end
+
+    Server-->>Browser: { success, documents: [{ id, fileName, pageCount }] }
+
+    Browser->>Server: POST /api/ask { question }
+    Server->>Memory: get session → combine ALL document texts
+    Note right of Server: context = doc1.text + doc2.text + doc3.text
+    Server-->>Browser: { answer: "..." }
+
+    Note over Browser: User removes a specific PDF
+    Browser->>Server: DELETE /api/document/:docId
+    Server->>Memory: session.documents.filter(d => d.id !== docId)
+    Server-->>Browser: { success, remainingDocs: [...] }
+```
+
+---
+
+## 📁 File Structure (unchanged from v1)
+
+```json
+{
+  "server": {
+    "index.ts":           "Entry point — app setup, middleware, session config, listen",
+    "routes": {
+      "pdfRoutes.ts":     "Routes: POST /api/upload-pdf, POST /api/ask, DELETE /api/document/:id, POST /api/end-session"
+    },
+    "controllers": {
+      "pdfController.ts": "Logic: handleUpload(), handleAsk(), handleRemoveDoc(), handleEndSession()"
+    },
+    "middleware": {
+      "upload.ts":        "Multer config — memory storage, array mode, file size limit, PDF-only filter"
+    },
+    "utils": {
+      "sessionStore.ts":  "In-memory Map with documents array + auto-cleanup timer"
+    }
+  }
+}
+```
+
+---
+
+## 🔄 Complete Data Flow (File-to-File)
+
+### Step 1: User Uploads One or More PDFs
+
+**File:** `client/src/components/PdfUpload.tsx` (new component)
+
+```
+User selects 1–5 PDF files → FormData with multiple files → POST /api/upload-pdf
+```
+
+| What | Detail |
+|---|---|
+| Input select | `<input type="file" accept=".pdf" multiple />` |
+| FormData | All files appended under field name `"pdfs"` |
+| Scenarios | **Batch**: select 3 files at once → 1 request with 3 files |
+|           | **Incremental**: upload 1 now, upload 2 more later → 2 separate requests, all accumulate in the same session |
+
+---
+
+### Step 2: Multer Receives Multiple Files
+
+**File:** `server/middleware/upload.ts`
+
+```typescript
+// KEY CHANGE: .array('pdfs', 5) instead of .single('pdf')
+multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },  // 10MB per file
+  fileFilter: onlyPDF
+}).array('pdfs', 5)   // max 5 files per request
+```
+
+| What | Detail |
+|---|---|
+| Method | `multer.array('pdfs', 5)` — accepts up to 5 files per request |
+| Result | `req.files` is an **array of file objects**, each with `.buffer` and `.originalname` |
+
+---
+
+### Step 3: Loop Through Files, Parse Each
+
+**File:** `server/controllers/pdfController.ts` → `handleUpload()`
+
+```typescript
+async function handleUpload(req, res) {
+  const files = req.files;           // Array of uploaded files
+  const sessionId = req.session.id;
+
+  // Get or create session entry
+  let session = sessionStore.get(sessionId);
+  if (!session) {
+    session = { documents: [], createdAt: Date.now() };
+  }
+
+  const newDocs = [];
+
+  for (const file of files) {
+    const pdfData = await pdfParse(file.buffer);
+
+    const doc = {
+      id: uuid(),                       // unique doc ID
+      fileName: file.originalname,      // "physics.pdf"
+      text: pdfData.text,               // extracted text
+      pageCount: pdfData.numpages,      // page count
+      uploadedAt: Date.now()
+    };
+
+    session.documents.push(doc);        // ADD to array (not replace!)
+    newDocs.push({ id: doc.id, fileName: doc.fileName, pageCount: doc.pageCount });
+  }
+
+  sessionStore.set(sessionId, session);
+
+  res.json({ success: true, newDocuments: newDocs, totalDocuments: session.documents.length });
+}
+```
+
+> [!IMPORTANT]
+> **Key behavior**: `session.documents.push(doc)` — each upload **appends** to the existing array. Uploading again doesn't overwrite previous PDFs. They accumulate.
+
+---
+
+### Step 4: User Asks a Question → All Documents Used as Context
+
+**File:** `server/controllers/pdfController.ts` → `handleAsk()`
+
+```typescript
+async function handleAsk(req, res) {
+  const session = sessionStore.get(req.session.id);
+  if (!session || session.documents.length === 0) {
+    return res.status(400).json({ error: "No documents uploaded" });
+  }
+
+  // COMBINE all document texts into one context
+  const combinedContext = session.documents
+    .map(doc => `--- ${doc.fileName} ---\n${doc.text}`)
+    .join('\n\n');
+
+  const question = req.body.question;
+
+  // Later: combinedContext → ScaleDown (compress) → LLM → answer
+}
+```
+
+| What | Detail |
+|---|---|
+| 1 PDF uploaded | Context = text from that 1 PDF |
+| 3 PDFs uploaded | Context = text from all 3, separated by filename headers |
+| ScaleDown role | Compress this combined context before sending to LLM (keeps things fast & cheap) |
+
+---
+
+### Step 5: User Can Remove a Specific Document
+
+**File:** `server/controllers/pdfController.ts` → `handleRemoveDoc()`
+
+```typescript
+async function handleRemoveDoc(req, res) {
+  const session = sessionStore.get(req.session.id);
+  const docId = req.params.docId;
+
+  session.documents = session.documents.filter(d => d.id !== docId);
+  sessionStore.set(req.session.id, session);
+
+  res.json({ success: true, remainingDocuments: session.documents.map(d => ({ id: d.id, fileName: d.fileName })) });
+}
+```
+
+---
+
+### Step 6: Session Cleanup (Same 3 Triggers)
+
+**File:** `server/utils/sessionStore.ts`
+
+| Trigger | What Gets Deleted |
+|---|---|
+| **Tab close** | ALL documents for that session |
+| **Timeout (30 min)** | ALL documents for expired sessions |
+| **Manual end** | ALL documents for that session |
+
+```typescript
+// Auto-cleanup: delete entire session (all docs) if older than 30 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, session] of store.entries()) {
+    if (now - session.createdAt > 30 * 60 * 1000) {
+      store.delete(id);   // wipes ALL documents for this session
+    }
+  }
+}, 5 * 60 * 1000);
+```
+
+---
+
+## 📊 Updated API Endpoints
+
+| Endpoint | Method | Request | Response |
+|---|---|---|---|
+| `/api/upload-pdf` | POST | `FormData` with `pdfs` field (1–5 files) | `{ success, newDocuments: [{id, fileName, pageCount}], totalDocuments }` |
+| `/api/ask` | POST | `{ question: string }` | `{ answer: string, tokenStats: {...} }` |
+| `/api/document/:docId` | DELETE | (docId in URL, sessionId from cookie) | `{ success, remainingDocuments: [...] }` |
+| `/api/end-session` | POST | (sessionId from cookie) | `{ success: true }` |
+| `/api/session-status` | GET | (sessionId from cookie) | `{ hasDocuments: boolean, documents: [{id, fileName, pageCount}] }` |
+
+---
+
+## 🖥️ Frontend Impact
+
+The frontend needs a small UI to show uploaded documents:
+
+```
+┌─────────────────────────────────────────┐
+│  📎 Uploaded Documents                  │
+│                                         │
+│  📄 physics.pdf (45 pages)        [✕]   │
+│  📄 chemistry.pdf (30 pages)      [✕]   │
+│  📄 math.pdf (60 pages)           [✕]   │
+│                                         │
+│  [+ Upload More]                        │
+└─────────────────────────────────────────┘
+```
+
+This could live in the **Sidebar** or as a panel above the chat input.
+
+---
+
+## ⚠️ RAM Usage with Multiple PDFs
+
+| Scenario | Estimated Memory |
+|---|---|
+| 1 user, 1 PDF (100 pages) | ~300 KB |
+| 1 user, 5 PDFs (500 pages total) | ~1.5 MB |
+| 50 concurrent users, 3 PDFs each | ~75 MB |
+| 100 concurrent users, 5 PDFs each | ~150 MB |
+
+> [!TIP]
+> Even with 100 users each uploading 5 PDFs, we're at ~150 MB RAM. Totally fine for a typical server. The 30-minute auto-cleanup keeps memory from growing indefinitely.
+
+> [!WARNING]
+> **Per-request limit**: Max 5 files per upload request, 10 MB each. This prevents abuse. You can adjust the `5` in `multer.array('pdfs', 5)` if needed, but total files per session should also have a sensible cap (e.g., 10).

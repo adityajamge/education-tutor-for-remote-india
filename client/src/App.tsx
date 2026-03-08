@@ -6,6 +6,8 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ChatArea, { type Message, TypingIndicator } from './components/ChatArea';
 import ChatInput from './components/ChatInput';
 import TokenStatsBar from './components/TokenStatsBar';
+import PdfPanel from './components/PdfPanel';
+import { useDocuments } from './hooks/useDocuments';
 import './App.css';
 
 function AppContent() {
@@ -17,6 +19,9 @@ function AppContent() {
     compressedTokens: number;
     savings: number;
   } | null>(null);
+
+  // Hook for managing documents and PDF uploads via Backend APIs
+  const { documents, isUploading, error, uploadFiles, removeDocument, endSession } = useDocuments();
 
   const sendMessage = useCallback(async (content: string) => {
     const userMsg: Message = {
@@ -76,7 +81,7 @@ function AppContent() {
         {/* Content */}
         <div className="main__content">
           {messages.length === 0 ? (
-            <WelcomeScreen onQuestionSelect={handleQuestionSelect} />
+            <WelcomeScreen />
           ) : (
             <ChatArea messages={messages} />
           )}
@@ -87,8 +92,18 @@ function AppContent() {
           )}
         </div>
 
+        {/* PDF Panel - shows uploaded docs and handles uploads */}
+        <PdfPanel
+          documents={documents}
+          isUploading={isUploading}
+          error={error}
+          onUpload={uploadFiles}
+          onRemove={removeDocument}
+          onClearSession={endSession}
+        />
+
         {/* Input area */}
-        <ChatInput onSend={sendMessage} disabled={isLoading} />
+        <ChatInput onSend={sendMessage} disabled={isLoading || isUploading} />
       </main>
     </div>
   );
