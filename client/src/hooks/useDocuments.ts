@@ -55,8 +55,8 @@ export function useDocuments() {
             }
 
             setDocuments(data.allDocuments);
-        } catch (err: any) {
-            setError(err.message || 'Error uploading files');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error uploading files');
         } finally {
             setIsUploading(false);
         }

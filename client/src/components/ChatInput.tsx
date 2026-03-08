@@ -1,5 +1,36 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
-import { Send, Mic, Paperclip, Loader2 } from 'lucide-react';
+
+// Custom Spotify UI Icons
+const PlusIcon = () => (
+    <svg role="img" height="20" width="20" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M15.25 8a.75.75 0 0 1-.75.75H8.75v5.75a.75.75 0 0 1-1.5 0V8.75H1.5a.75.75 0 0 1 0-1.5h5.75V1.5a.75.75 0 0 1 1.5 0v5.75h5.75a.75.75 0 0 1 .75.75z" />
+    </svg>
+);
+
+const PlayIcon = () => (
+    <svg role="img" height="20" width="20" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z" />
+    </svg>
+);
+
+const MicIcon = () => (
+    <svg role="img" height="20" width="20" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 12a4 4 0 0 0 4-4V4a4 4 0 0 0-8 0v4a4 4 0 0 0 4 4zm-5-4a.75.75 0 0 1 1.5 0 3.5 3.5 0 0 0 7 0 .75.75 0 0 1 1.5 0 5 5 0 0 1-4.25 4.935v2.315a.75.75 0 0 1-1.5 0v-2.315A5 5 0 0 1 3 8z" />
+    </svg>
+);
+
+const LoaderIcon = () => (
+    <svg role="img" height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chat-input__spinner">
+        <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20"></circle>
+    </svg>
+);
+
+const TAGLINES = [
+    "Upload a textbook and ask any question.",
+    "EduTutor finds answers directly from your books.",
+    "Optimized with AI context compression.",
+    "Built for students with limited internet."
+];
 
 interface ChatInputProps {
     onSend: (message: string) => void;
@@ -12,6 +43,20 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [taglineIndex, setTaglineIndex] = useState(0);
+    const [fade, setFade] = useState(true);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setFade(false);
+            setTimeout(() => {
+                setTaglineIndex((prev) => (prev + 1) % TAGLINES.length);
+                setFade(true);
+            }, 300);
+        }, 5000); // Rotate every 5 seconds
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -65,7 +110,7 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
                     onClick={() => fileInputRef.current?.click()}
                     disabled={disabled || isUploading}
                 >
-                    {isUploading ? <Loader2 size={18} className="chat-input__spinner" /> : <Paperclip size={18} />}
+                    {isUploading ? <LoaderIcon /> : <PlusIcon />}
                 </button>
 
                 <textarea
@@ -87,7 +132,7 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
                         id="mic-btn"
                         disabled
                     >
-                        <Mic size={18} />
+                        <MicIcon />
                     </button>
                     <button
                         type="submit"
@@ -96,12 +141,16 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
                         id="send-btn"
                         title="Send message"
                     >
-                        <Send size={18} />
+                        <PlayIcon />
                     </button>
                 </div>
             </div>
-            <p className="chat-input__disclaimer">
-                EduTutor uses AI to generate answers. Always verify with your textbook.
+            <p className="chat-input__disclaimer" style={{
+                opacity: fade ? 1 : 0,
+                transition: 'opacity 0.3s ease-in-out',
+                minHeight: '1.2rem' // Keep height stable during transition
+            }}>
+                {TAGLINES[taglineIndex]}
             </p>
         </form>
     );

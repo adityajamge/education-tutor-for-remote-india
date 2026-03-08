@@ -650,6 +650,20 @@ body {
     line-height: 1.6;
 }
 
+.welcome__cursor {
+    width: 2px;
+    height: 1.1rem;
+    background-color: var(--accent-primary);
+    animation: blink 0.8s step-end infinite;
+    display: inline-block;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
 .welcome__explore-title {
     font-size: 0.8rem;
     font-weight: 600;
@@ -744,11 +758,15 @@ body {
     gap: 24px;
 }
 
-/* ---------- Message Bubble ---------- */
+/* ---------- Message Bubble (Spotify Feed Style) ---------- */
 .chat-message {
     display: flex;
-    gap: 12px;
+    gap: 16px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    /* Hover rounded edges like Spotify playlist */
     animation: message-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background var(--transition-fast);
 }
 
 @keyframes message-in {
@@ -763,80 +781,92 @@ body {
     }
 }
 
-.chat-message--user {
-    flex-direction: row-reverse;
+.chat-message:hover {
+    background: var(--bg-hover);
 }
 
+/* User avatar acts like an album cover (square soft edges) */
 .chat-message__avatar {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    border-radius: var(--radius-sm);
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    margin-top: 2px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chat-message__avatar--user {
-    background: var(--user-bubble);
-    color: #fff;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #158b3f 100%);
+    color: var(--bg-primary);
+    border-radius: 4px;
 }
 
+/* AI avatar acts like an artist profile (circular) */
 .chat-message__avatar--assistant {
-    background: var(--gradient-brand);
-    color: #fff;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-radius: 50%;
 }
 
 .chat-message__content-wrapper {
-    max-width: 75%;
+    max-width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    padding-top: 2px;
 }
 
 .chat-message--user .chat-message__content-wrapper {
-    align-items: flex-end;
+    align-items: flex-start;
 }
 
 .chat-message__bubble {
-    padding: 12px 16px;
-    border-radius: var(--radius-lg);
+    padding: 0;
     line-height: 1.65;
+    background: transparent !important;
+    border: none !important;
+    width: 100%;
 }
 
+/* User message looks like a bold track title */
 .chat-message__bubble--user {
-    background: var(--user-bubble);
-    color: #fff;
-    border-bottom-right-radius: 4px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    padding-bottom: 2px;
 }
 
 .chat-message__bubble--assistant {
-    background: var(--assistant-bubble);
-    border: 1px solid var(--border-primary);
-    border-bottom-left-radius: 4px;
-    color: var(--text-primary);
+    color: var(--text-secondary);
 }
 
 .chat-message__text {
-    font-size: 0.88rem;
+    font-size: 1.15rem;
+    font-weight: 600;
 }
 
 .chat-message__markdown {
-    font-size: 0.88rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
 }
 
 .chat-message__markdown h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 12px;
     margin-top: 4px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
 }
 
 .chat-message__markdown h3 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin: 14px 0 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 16px 0 8px;
     color: var(--accent-primary);
 }
 
@@ -898,12 +928,19 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 4px;
-    padding: 0 4px;
+    margin-top: 12px;
+    padding: 0;
+    opacity: 0;
+    /* Hide by default, show on row hover like Spotify track info */
+    transition: opacity var(--transition-fast);
+}
+
+.chat-message:hover .chat-message__meta {
+    opacity: 1;
 }
 
 .chat-message__time {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 
