@@ -26,8 +26,10 @@ export function useTypewriter(texts: string[], typingSpeed = 50, deletingSpeed =
                     setDisplayText(currentString.slice(0, displayText.length - 1));
                 }, deletingSpeed);
             } else {
-                setIsTyping(true);
-                setCurrentIndex((prev) => (prev + 1) % texts.length);
+                timeout = setTimeout(() => {
+                    setIsTyping(true);
+                    setCurrentIndex((prev) => (prev + 1) % texts.length);
+                }, 0);
             }
         }
 

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Document } from '../hooks/useDocuments';
 
 // Custom Spotify UI Icons
