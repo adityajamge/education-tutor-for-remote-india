@@ -1,11 +1,8 @@
 import {
-    ChevronLeft,
-    ChevronRight,
-    GraduationCap,
-    Info,
     FileText,
     FileX,
     Trash2,
+    Eye,
 } from 'lucide-react';
 import type { Document } from '../hooks/useDocuments';
 
@@ -22,40 +19,36 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggleCollapse, documents = [], onRemove, onClearSession, error }: SidebarProps) {
     return (
         <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
-            {/* Collapse toggle */}
-            <button
-                className="sidebar__toggle"
-                onClick={onToggleCollapse}
-                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                id="sidebar-toggle"
-            >
-                {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-            </button>
-
-            {/* Brand / Logo */}
-            <div className="sidebar__brand">
-                <div className="sidebar__logo">
-                    <GraduationCap size={collapsed ? 24 : 28} />
-                </div>
-                {!collapsed && (
-                    <div className="sidebar__brand-text">
-                        <h1 className="sidebar__title">EduTutor</h1>
-                        <span className="sidebar__subtitle">AI Learning Assistant</span>
+            {/* Brand / Toggle Header */}
+            <div className={`sidebar__brand ${collapsed ? 'sidebar__brand--collapsed' : ''}`}>
+                <button
+                    onClick={onToggleCollapse}
+                    className="sidebar__header-btn"
+                    title={collapsed ? "Expand Your Library" : "Collapse Your Library"}
+                >
+                    <div className="sidebar__header-icon">
+                        <svg data-encore-id="icon" role="img" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" width={collapsed ? 24 : 24} height={collapsed ? 24 : 24}>
+                            <path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.464a1 1 0 0 0-.5-.866l-6-3.464zM9 2a1 1 0 0 0-1 1v18a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1z"></path>
+                        </svg>
                     </div>
-                )}
+                    {!collapsed && <span className="sidebar__title">EduTutor</span>}
+                </button>
             </div>
 
             {!collapsed && (
                 <>
                     {/* Documents List */}
                     <div className="sidebar__section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <h2 className="sidebar__section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FileText size={14} />
+                        <h2 className="sidebar__section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px 20px', margin: '-16px -12px 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', transition: 'color var(--transition-fast)', cursor: 'pointer' }}
+                                onMouseOver={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                            >
+                                <FileText size={24} />
                                 <span>Attached Textbooks</span>
                             </div>
                             {documents.length > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
                                     {documents.length} / 5
                                 </span>
                             )}
@@ -89,19 +82,29 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
                                 </div>
                             ) : (
                                 documents.map((doc) => (
-                                    <div key={doc.id} style={{
+                                    <div key={doc.id} className="sidebar-doc-item" style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '10px',
-                                        padding: '10px 12px',
-                                        background: 'var(--bg-elevated)',
-                                        borderRadius: 'var(--radius-md)',
-                                        border: '1px solid var(--border-primary)',
+                                        gap: '12px',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
                                     }}>
-                                        <FileText size={16} color="var(--accent-primary)" />
-                                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+                                        <div style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            background: 'var(--bg-elevated)',
+                                            borderRadius: '4px',
+                                            color: 'var(--text-secondary)'
+                                        }}>
+                                            <FileText size={20} />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1, gap: '2px' }}>
                                             <span style={{
-                                                fontSize: '0.8rem',
+                                                fontSize: '0.88rem',
                                                 fontWeight: 500,
                                                 color: 'var(--text-primary)',
                                                 whiteSpace: 'nowrap',
@@ -110,29 +113,30 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
                                             }} title={doc.fileName}>
                                                 {doc.fileName}
                                             </span>
-                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                                                 {doc.pageCount} pages
                                             </span>
                                         </div>
-                                        {onRemove && (
+                                        <div style={{ display: 'flex' }}>
                                             <button
-                                                onClick={() => onRemove(doc.id)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'var(--text-tertiary)',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    padding: '4px',
-                                                    borderRadius: '4px'
+                                                className="sidebar-doc-action"
+                                                title="View PDF"
+                                                onClick={() => {
+                                                    alert(`Viewing ${doc.fileName} is not implemented yet.`);
                                                 }}
-                                                title="Remove PDF"
-                                                onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-danger)'}
-                                                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
                                             >
-                                                <Trash2 size={14} />
+                                                <Eye size={16} />
                                             </button>
-                                        )}
+                                            {onRemove && (
+                                                <button
+                                                    onClick={() => onRemove(doc.id)}
+                                                    className="sidebar-doc-action"
+                                                    title="Remove PDF"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -157,34 +161,71 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
                                 style={{
                                     marginTop: 'auto',
                                     marginBottom: '16px',
-                                    padding: '8px 0',
+                                    padding: '8px 16px',
                                     background: 'transparent',
-                                    border: '1px solid var(--border-secondary)',
+                                    border: 'none',
                                     color: 'var(--text-secondary)',
                                     fontSize: '0.8rem',
-                                    borderRadius: 'var(--radius-md)',
+                                    fontWeight: 600,
+                                    borderRadius: '500px',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '6px'
+                                    gap: '8px',
+                                    transition: 'all var(--transition-fast)'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                    e.currentTarget.style.transform = 'scale(1.04)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                    e.currentTarget.style.transform = 'scale(1)';
                                 }}
                             >
-                                <Trash2 size={14} />
+                                <Trash2 size={16} />
                                 <span>Clear Session</span>
                             </button>
                         )}
                     </div>
 
                     {/* Footer Info */}
-                    <div className="sidebar__footer">
-                        <div className="sidebar__info-card">
-                            <Info size={14} />
-                            <p>Powered by AI with context compression for low-bandwidth areas.</p>
+                    <div className="sidebar__footer" style={{ marginTop: 'auto', padding: '16px 8px' }}>
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            background: 'var(--bg-elevated)',
+                            alignItems: 'flex-start'
+                        }}>
+                            <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', margin: 0 }}>Powered by AI</p>
+                            <p style={{ color: 'var(--text-primary)', fontSize: '0.8rem', letterSpacing: '0px', margin: 0 }}>Context compression for low-bandwidth regions.</p>
+                            <button style={{
+                                background: 'var(--text-primary)',
+                                color: 'var(--bg-primary)',
+                                borderRadius: '500px',
+                                padding: '6px 16px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                border: 'none',
+                                marginTop: '12px',
+                                cursor: 'pointer',
+                                transition: 'transform 0.1s ease',
+                            }}
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                Learn more
+                            </button>
                         </div>
-                        <p className="sidebar__credits">
-                            Intel Unnati × HPE
-                        </p>
+                        <div style={{ padding: '32px 16px 16px', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', cursor: 'pointer' }}>Intel Unnati</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', cursor: 'pointer' }}>× HPE</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', cursor: 'pointer' }}>EduTutor 2026</span>
+                        </div>
                     </div>
                 </>
             )}
