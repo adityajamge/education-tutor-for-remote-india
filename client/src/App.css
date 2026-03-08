@@ -1022,6 +1022,32 @@ body {
     gap: 4px;
 }
 
+.chat-input__attach-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+    margin-right: 2px;
+}
+
+.chat-input__attach-btn:hover:not(:disabled) {
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.chat-input__attach-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .chat-input__mic-btn {
     width: 36px;
     height: 36px;
@@ -1034,6 +1060,16 @@ body {
     color: var(--text-muted);
     cursor: not-allowed;
     transition: all var(--transition-fast);
+}
+
+.chat-input__spinner {
+    animation: chat-spin 1s linear infinite;
+}
+
+@keyframes chat-spin {
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .chat-input__send-btn {
@@ -1068,92 +1104,64 @@ body {
 }
 
 /* ============================================
-   PDF PANEL
+   PDF CHIPS / PANEL (MINIMAL)
    ============================================ */
 
-.pdf-panel {
-    padding: 12px 24px;
-    background: var(--bg-primary);
-    border-top: 1px solid var(--border-secondary);
+.pdf-chips-wrapper {
+    padding: 8px 24px 0;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.pdf-panel__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.pdf-panel__title {
+.pdf-chips-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    background: transparent;
 }
 
-.pdf-panel__clear-btn {
+.pdf-chips-scroll {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border-primary);
-    color: var(--text-tertiary);
-    font-size: 0.75rem;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast);
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Firefox */
+    padding-bottom: 4px;
 }
 
-.pdf-panel__clear-btn:hover {
-    background: rgba(255, 107, 107, 0.1);
-    color: var(--accent-danger);
-    border-color: rgba(255, 107, 107, 0.3);
+.pdf-chips-scroll::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
 }
 
-.pdf-panel__list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.pdf-panel__item {
+.pdf-chip {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     background: var(--bg-elevated);
     border: 1px solid var(--border-primary);
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    font-size: 0.8rem;
-}
-
-.pdf-panel__item-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-primary);
-}
-
-.pdf-panel__item-name {
-    font-weight: 500;
-    max-width: 150px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
     white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-chip-icon {
+    color: var(--accent-primary);
+}
+
+.pdf-chip-name {
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 500;
 }
 
-.pdf-panel__item-pages {
-    color: var(--text-tertiary);
-    font-size: 0.7rem;
-}
-
-.pdf-panel__item-remove {
+.pdf-chip-remove {
     background: transparent;
     border: none;
     color: var(--text-tertiary);
@@ -1161,56 +1169,38 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 2px;
+    border-radius: 50%;
     transition: all var(--transition-fast);
 }
 
-.pdf-panel__item-remove:hover {
+.pdf-chip-remove:hover {
     color: var(--accent-danger);
+    background: rgba(255, 107, 107, 0.1);
 }
 
-.pdf-panel__hidden-input {
-    display: none;
-}
-
-.pdf-panel__upload {
-    border: 1px dashed var(--border-primary);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    background: color-mix(in srgb, var(--accent-primary) 3%, transparent);
-}
-
-.pdf-panel__upload:hover {
-    border-color: var(--accent-primary);
-    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-}
-
-.pdf-panel__upload-state {
+.pdf-chip-clear {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    font-weight: 500;
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    color: var(--text-tertiary);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
-.pdf-panel__spinner {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
+.pdf-chip-clear:hover {
+    color: var(--accent-danger);
+    border-color: rgba(255, 107, 107, 0.3);
+    background: rgba(255, 107, 107, 0.1);
 }
 
 .pdf-panel__error {
     color: var(--accent-danger);
     font-size: 0.8rem;
-    margin-bottom: 12px;
     padding: 8px;
     background: rgba(255, 107, 107, 0.1);
     border-radius: var(--radius-sm);

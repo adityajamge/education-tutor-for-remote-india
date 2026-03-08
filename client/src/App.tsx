@@ -6,7 +6,6 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ChatArea, { type Message, TypingIndicator } from './components/ChatArea';
 import ChatInput from './components/ChatInput';
 import TokenStatsBar from './components/TokenStatsBar';
-import PdfPanel from './components/PdfPanel';
 import { useDocuments } from './hooks/useDocuments';
 import './App.css';
 
@@ -64,6 +63,10 @@ function AppContent() {
         onQuestionSelect={handleQuestionSelect}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        documents={documents}
+        error={error}
+        onRemove={removeDocument}
+        onClearSession={endSession}
       />
 
       <main className="main">
@@ -92,18 +95,13 @@ function AppContent() {
           )}
         </div>
 
-        {/* PDF Panel - shows uploaded docs and handles uploads */}
-        <PdfPanel
-          documents={documents}
-          isUploading={isUploading}
-          error={error}
+        {/* Input area with PDF attachment button integrated */}
+        <ChatInput
+          onSend={sendMessage}
+          disabled={isLoading || isUploading}
           onUpload={uploadFiles}
-          onRemove={removeDocument}
-          onClearSession={endSession}
+          isUploading={isUploading}
         />
-
-        {/* Input area */}
-        <ChatInput onSend={sendMessage} disabled={isLoading || isUploading} />
       </main>
     </div>
   );

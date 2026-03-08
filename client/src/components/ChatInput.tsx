@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
-import { Send, Mic } from 'lucide-react';
+import { Send, Mic, Paperclip, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
     onSend: (message: string) => void;
     disabled?: boolean;
+    onUpload?: (files: FileList) => void;
+    isUploading?: boolean;
 }
 
-export default function ChatInput({ onSend, disabled }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled, onUpload, isUploading }: ChatInputProps) {
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -27,6 +30,14 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         }
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0 && onUpload) {
+            onUpload(e.target.files);
+            // Reset input so the same files can't get stuck if selected again
+            e.target.value = '';
+        }
+    };
+
     // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
@@ -38,6 +49,25 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     return (
         <form className="chat-input" onSubmit={handleSubmit} id="chat-input-form">
             <div className="chat-input__container">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".pdf"
+                    multiple
+                    style={{ display: 'none' }}
+                />
+
+                <button
+                    type="button"
+                    className="chat-input__attach-btn"
+                    title="Upload PDFs (Max 5)"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={disabled || isUploading}
+                >
+                    {isUploading ? <Loader2 size={18} className="chat-input__spinner" /> : <Paperclip size={18} />}
+                </button>
+
                 <textarea
                     ref={textareaRef}
                     className="chat-input__textarea"
