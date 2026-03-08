@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
+import PdfPreviewSidebar from './components/PdfPreviewSidebar';
 import ThemeToggle from './components/ThemeToggle';
 import WelcomeScreen from './components/WelcomeScreen';
 import SplashScreen from './components/SplashScreen';
@@ -15,11 +16,23 @@ function AppContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
+  const [showPdfSidebar, setShowPdfSidebar] = useState(false);
   const [tokenStats, setTokenStats] = useState<{
     originalTokens: number;
     compressedTokens: number;
     savings: number;
   } | null>(null);
+
+  // Handle PDF preview with animation
+  const handleViewPdf = (pdf: { url: string; fileName: string } | null) => {
+    if (pdf) {
+      setPdfPreview(pdf);
+      setShowPdfSidebar(true);
+    } else {
+      setShowPdfSidebar(false);
+    }
+  };
 
   // Hook for managing documents and PDF uploads via Backend APIs
   const { documents, isUploading, error, uploadFiles, removeDocument, endSession } = useDocuments();
@@ -73,6 +86,7 @@ function AppContent() {
         error={error}
         onRemove={removeDocument}
         onClearSession={endSession}
+        onViewPdf={handleViewPdf}
       />
 
       <main className="main">
@@ -109,6 +123,14 @@ function AppContent() {
           isUploading={isUploading}
         />
       </main>
+
+      {/* PDF Preview Sidebar - Always rendered for smooth transition */}
+      <PdfPreviewSidebar
+        pdfUrl={pdfPreview?.url || ''}
+        fileName={pdfPreview?.fileName || ''}
+        onClose={() => handleViewPdf(null)}
+        show={showPdfSidebar}
+      />
     </div>
   );
 }

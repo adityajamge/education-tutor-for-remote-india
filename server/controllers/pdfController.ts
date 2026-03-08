@@ -14,7 +14,10 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
 
         // Get session ID from express-session
         const sessionId = req.session.id;
+        console.log(`[Upload] Session ID: ${sessionId}`);
+        
         const session = sessionStore.getOrCreate(sessionId);
+        console.log(`[Upload] Session created/retrieved, current docs: ${session.documents.length}`);
 
         const newDocuments = [];
 
@@ -28,6 +31,7 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
                 text: pdfData.text,
                 pageCount: pdfData.numpages,
                 uploadedAt: Date.now(),
+                buffer: file.buffer, // Store the original PDF buffer
             };
 
             session.documents.push(doc); // APPEND — never overwrite
@@ -42,6 +46,8 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
         sessionStore.set(sessionId, session);
 
         console.log(`[Upload] Session ${sessionId}: ${session.documents.length} total documents`);
+        console.log(`[Upload] Document IDs: ${session.documents.map(d => d.id).join(', ')}`);
+        console.log(`[Upload] SessionStore size: ${sessionStore.size()}`);
 
         res.json({
             success: true,
@@ -111,6 +117,47 @@ export function handleRemoveDocument(req: Request, res: Response): void {
 
 export function handleEndSession(req: Request, res: Response): void {
     const sessionId = req.session.id;
-    sessionStore.delete(sessionId);
+    const session = sessionStore.get(sessionId);
+    
+    if (session) {
+        // Clear documents but keep the session
+        session.documents = [];
+        sessionStore.set(sessionId, session);
+        console.log(`[EndSession] Cleared documents for session ${sessionId}`);
+    }
+    
     res.json({ success: true, message: 'Session memory cleared' });
+}
+
+export function handleViewDocument(req: Request, res: Response): void {
+    const sessionId = req.session.id;
+    const docId = req.params.docId;
+
+    console.log(`[ViewDocument] Session: ${sessionId}, DocId: ${docId}`);
+    console.log(`[ViewDocument] SessionStore size: ${sessionStore.size()}`);
+
+    const session = sessionStore.get(sessionId);
+    if (!session) {
+        console.log(`[ViewDocument] Session not found: ${sessionId}`);
+        console.log(`[ViewDocument] All session IDs in store:`, Array.from(sessionStore.getAllSessionIds()));
+        res.status(404).json({ success: false, error: 'Session not found' });
+        return;
+    }
+
+    console.log(`[ViewDocument] Session has ${session.documents.length} documents`);
+
+    const document = session.documents.find((d) => d.id === docId);
+    if (!document) {
+        console.log(`[ViewDocument] Document not found: ${docId}`);
+        console.log(`[ViewDocument] Available IDs: ${session.documents.map(d => d.id).join(', ')}`);
+        res.status(404).json({ success: false, error: 'Document not found' });
+        return;
+    }
+
+    console.log(`[ViewDocument] Serving PDF: ${document.fileName}`);
+
+    // Set headers for PDF viewing
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+    res.send(document.buffer);
 }

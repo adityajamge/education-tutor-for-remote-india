@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Document } from '../hooks/useDocuments';
 
 // Custom Spotify UI Icons
@@ -39,9 +40,17 @@ interface SidebarProps {
     onRemove?: (id: string) => void;
     onClearSession?: () => void;
     error?: string | null;
+    onViewPdf?: (pdf: { url: string; fileName: string }) => void;
 }
 
-export default function Sidebar({ collapsed, onToggleCollapse, documents = [], onRemove, onClearSession, error }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggleCollapse, documents = [], onRemove, onClearSession, error, onViewPdf }: SidebarProps) {
+    const handleViewPdf = (doc: Document) => {
+        if (onViewPdf) {
+            const pdfUrl = `http://localhost:3000/api/document/${doc.id}/view`;
+            onViewPdf({ url: pdfUrl, fileName: doc.fileName });
+        }
+    };
+
     return (
         <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
             {/* Brand / Toggle Header */}
@@ -146,9 +155,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
                                             <button
                                                 className="sidebar-doc-action"
                                                 title="View PDF"
-                                                onClick={() => {
-                                                    alert(`Viewing ${doc.fileName} is not implemented yet.`);
-                                                }}
+                                                onClick={() => handleViewPdf(doc)}
                                             >
                                                 <ViewIcon size={16} />
                                             </button>

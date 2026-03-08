@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadPdfs } from '../middleware/upload';
-import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession } from '../controllers/pdfController';
+import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument } from '../controllers/pdfController';
 
 const router = Router();
 
@@ -9,6 +9,9 @@ router.post('/upload-pdf', uploadPdfs, handleUpload);
 
 // GET /api/session-status — Get currently uploaded documents
 router.get('/session-status', handleSessionStatus);
+
+// GET /api/document/:docId/view — View/download a specific PDF
+router.get('/document/:docId/view', handleViewDocument);
 
 // DELETE /api/document/:docId — Remove a specific PDF
 router.delete('/document/:docId', handleRemoveDocument);

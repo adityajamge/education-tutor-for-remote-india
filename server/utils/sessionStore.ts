@@ -4,6 +4,7 @@ export interface Document {
     text: string;
     pageCount: number;
     uploadedAt: number;
+    buffer: Buffer; // Store the original PDF buffer
 }
 
 export interface Session {
@@ -40,6 +41,11 @@ export const sessionStore = {
     /** Debug: get count of active sessions */
     size(): number {
         return store.size;
+    },
+
+    /** Debug: get all session IDs */
+    getAllSessionIds(): string[] {
+        return Array.from(store.keys());
     },
 };
 
