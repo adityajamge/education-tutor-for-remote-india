@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadPdfs } from '../middleware/upload';
-import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument } from '../controllers/pdfController';
+import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument, handleChat } from '../controllers/pdfController';
 
 const router = Router();
 
@@ -18,5 +18,8 @@ router.delete('/document/:docId', handleRemoveDocument);
 
 // POST /api/end-session — Clear memory
 router.post('/end-session', handleEndSession);
+
+// POST /api/chat — Ask a question about uploaded documents
+router.post('/chat', handleChat);
 
 export default router;

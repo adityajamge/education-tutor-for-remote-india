@@ -48,24 +48,56 @@ function AppContent() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Simulate AI response (replace with actual API call later)
-    setTimeout(() => {
+    try {
+      // Call backend API
+      const response = await fetch('http://localhost:3000/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for session cookies
+        body: JSON.stringify({ question: content }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get response');
+      }
+
+      // Display only AI response
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: getSimulatedResponse(content),
+        content: data.answer,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMsg]);
-      setIsLoading(false);
 
-      // Simulated token stats
-      setTokenStats({
-        originalTokens: Math.floor(Math.random() * 2000) + 1000,
-        compressedTokens: Math.floor(Math.random() * 500) + 200,
-        savings: Math.floor(Math.random() * 30) + 50,
-      });
-    }, 1500 + Math.random() * 1000);
+      // Update token stats from ScaleDown metadata
+      if (data.metadata) {
+        const savings = data.metadata.original_tokens > 0
+          ? Math.round(((data.metadata.original_tokens - data.metadata.compressed_tokens) / data.metadata.original_tokens) * 100)
+          : 0;
+
+        setTokenStats({
+          originalTokens: data.metadata.original_tokens,
+          compressedTokens: data.metadata.compressed_tokens,
+          savings,
+        });
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `❌ Error: ${error instanceof Error ? error.message : 'Failed to get response. Please make sure you have uploaded a PDF first.'}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const handleQuestionSelect = useCallback((question: string) => {
