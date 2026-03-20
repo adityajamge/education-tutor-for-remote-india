@@ -1245,6 +1245,7 @@ body {
 .token-stats {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 4px 12px;
     border-radius: var(--radius-full);
@@ -1323,4 +1324,22 @@ body {
     .token-stats {
         display: none;
     }
+}
+
+.pruning-summary {
+    margin: 0 24px 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent);
+}
+
+.pruning-summary strong {
+    color: var(--text-primary);
+}
+
+.pruning-summary__chapters {
+    color: var(--text-tertiary);
 }

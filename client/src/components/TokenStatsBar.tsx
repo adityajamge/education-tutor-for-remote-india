@@ -1,9 +1,11 @@
 import { Zap, BarChart3 } from 'lucide-react';
 
 interface TokenStats {
-    originalTokens: number;
+    baselineTokens: number;
+    optimizedTokens: number;
     compressedTokens: number;
-    savings: number;
+    routingSavings: number;
+    totalSavings: number;
 }
 
 interface TokenStatsBarProps {
@@ -17,16 +19,24 @@ export default function TokenStatsBar({ stats }: TokenStatsBarProps) {
         <div className="token-stats" id="token-stats">
             <div className="token-stats__item">
                 <BarChart3 size={14} />
-                <span>Original: <strong>{stats.originalTokens}</strong> tokens</span>
+                <span>Baseline: <strong>{stats.baselineTokens}</strong></span>
             </div>
             <div className="token-stats__divider" />
             <div className="token-stats__item">
                 <Zap size={14} />
-                <span>Compressed: <strong>{stats.compressedTokens}</strong> tokens</span>
+                <span>Routed: <strong>{stats.optimizedTokens}</strong></span>
             </div>
             <div className="token-stats__divider" />
             <div className="token-stats__item token-stats__item--savings">
-                <span>Saved: <strong>{stats.savings}%</strong></span>
+                <span>Compress: <strong>{stats.compressedTokens}</strong></span>
+            </div>
+            <div className="token-stats__divider" />
+            <div className="token-stats__item token-stats__item--savings">
+                <span>Route Save: <strong>{stats.routingSavings}%</strong></span>
+            </div>
+            <div className="token-stats__divider" />
+            <div className="token-stats__item token-stats__item--savings">
+                <span>Total Save: <strong>{stats.totalSavings}%</strong></span>
             </div>
         </div>
     );

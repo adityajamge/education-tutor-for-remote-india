@@ -1,7 +1,88 @@
 import { Request, Response } from 'express';
 import pdfParse from 'pdf-parse';
 import { v4 as uuidv4 } from 'uuid';
-import { sessionStore } from '../utils/sessionStore';
+import { DocumentSection, sessionStore } from '../utils/sessionStore';
+
+const MAX_SECTIONS_FOR_SCALEDOWN = 8;
+const FALLBACK_SECTION_CHAR_LIMIT = 12000;
+
+function normalizeWhitespace(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
+}
+
+function splitIntoSections(rawText: string): DocumentSection[] {
+    const text = rawText.replace(/\r/g, '');
+    const headingRegex = /(^|\n)(?:chapter|unit|lesson)\s+\d+[\s:.-]*([^\n]{0,80})/gim;
+    const matches = Array.from(text.matchAll(headingRegex));
+
+    if (matches.length === 0) {
+        const trimmed = text.trim().slice(0, FALLBACK_SECTION_CHAR_LIMIT);
+        return [{
+            id: uuidv4(),
+            title: 'Full Text',
+            text: trimmed,
+            charCount: trimmed.length,
+        }];
+    }
+
+    const sections: DocumentSection[] = [];
+    for (let i = 0; i < matches.length; i++) {
+        const current = matches[i];
+        const start = (current.index || 0) + current[0].length;
+        const end = i + 1 < matches.length ? (matches[i + 1].index || text.length) : text.length;
+        const titleSuffix = normalizeWhitespace(current[2] || '');
+        const title = titleSuffix ? `Chapter ${i + 1}: ${titleSuffix}` : `Chapter ${i + 1}`;
+        const sectionText = text.slice(start, end).trim();
+
+        if (!sectionText) {
+            continue;
+        }
+
+        sections.push({
+            id: uuidv4(),
+            title,
+            text: sectionText,
+            charCount: sectionText.length,
+        });
+    }
+
+    if (sections.length === 0) {
+        const trimmed = text.trim().slice(0, FALLBACK_SECTION_CHAR_LIMIT);
+        sections.push({
+            id: uuidv4(),
+            title: 'Full Text',
+            text: trimmed,
+            charCount: trimmed.length,
+        });
+    }
+
+    return sections;
+}
+
+function tokenize(text: string): Set<string> {
+    return new Set(
+        text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter((token) => token.length > 2)
+    );
+}
+
+function scoreSection(questionTokens: Set<string>, sectionText: string, title: string): number {
+    const sectionTokens = tokenize(`${title} ${sectionText.slice(0, 4000)}`);
+    let overlap = 0;
+    for (const token of questionTokens) {
+        if (sectionTokens.has(token)) {
+            overlap++;
+        }
+    }
+    return overlap;
+}
+
+function estimateTokens(text: string): number {
+    return Math.ceil(text.length / 4);
+}
 
 export async function handleUpload(req: Request, res: Response): Promise<void> {
     try {
@@ -24,10 +105,11 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
         // Parse each uploaded PDF
         for (const file of files) {
             const pdfData = await pdfParse(file.buffer);
+            const sections = splitIntoSections(pdfData.text);
 
             console.log(`[Upload] PDF parsed: ${file.originalname}`);
             console.log(`[Upload] Extracted text length: ${pdfData.text.length} characters`);
-            console.log(`[Upload] First 200 chars: ${pdfData.text.substring(0, 200)}`);
+            console.log(`[Upload] Sections indexed: ${sections.length}`);
 
             const doc = {
                 id: uuidv4(),
@@ -36,6 +118,7 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
                 pageCount: pdfData.numpages,
                 uploadedAt: Date.now(),
                 buffer: file.buffer, // Store the original PDF buffer
+                sections,
             };
 
             session.documents.push(doc); // APPEND — never overwrite
@@ -188,18 +271,50 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        // Combine all uploaded PDF texts
-        const uploadedPdfTexts = session.documents
+        // Baseline context (all documents) for comparison metrics only.
+        const baselineContext = session.documents
             .map(doc => `[${doc.fileName}]\n${doc.text}`)
             .join('\n\n---\n\n');
 
-        console.log(`[Chat] Combined PDF text length: ${uploadedPdfTexts.length} characters`);
-        console.log(`[Chat] API Key (first 10 chars): ${(process.env.SCALEDOWN_API || '').substring(0, 10)}...`);
-        console.log(`[Chat] API Key length: ${(process.env.SCALEDOWN_API || '').length}`);
+        const questionTokens = tokenize(question);
+        const sectionCandidates = session.documents.flatMap((doc) =>
+            doc.sections.map((section) => ({
+                documentId: doc.id,
+                fileName: doc.fileName,
+                sectionId: section.id,
+                sectionTitle: section.title,
+                sectionText: section.text,
+                score: scoreSection(questionTokens, section.text, section.title),
+            }))
+        );
+
+        const rankedSections = sectionCandidates
+            .sort((a, b) => b.score - a.score)
+            .slice(0, MAX_SECTIONS_FOR_SCALEDOWN);
+
+        const selectedSections = rankedSections.some((section) => section.score > 0)
+            ? rankedSections.filter((section) => section.score > 0)
+            : rankedSections;
+
+        const optimizedContext = selectedSections
+            .map((section) => `[${section.fileName} | ${section.sectionTitle}]\n${section.sectionText}`)
+            .join('\n\n---\n\n');
+
+        if (!optimizedContext) {
+            res.status(400).json({
+                success: false,
+                error: 'Unable to build relevant context from uploaded documents.',
+            });
+            return;
+        }
+
+        console.log(`[Chat] Baseline context length: ${baselineContext.length} characters`);
+        console.log(`[Chat] Selected sections: ${selectedSections.length}/${sectionCandidates.length}`);
+        console.log(`[Chat] Optimized context length: ${optimizedContext.length} characters`);
 
         // Call ScaleDown API
         const requestBody = {
-            context: uploadedPdfTexts,
+            context: optimizedContext,
             prompt: question,
             scaledown: {
                 rate: 'auto'
@@ -223,7 +338,7 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             res.status(500).json({ 
                 success: false, 
                 error: 'Failed to compress context with ScaleDown API',
-                details: errorText
+                details: 'ScaleDown compression request failed'
             });
             return;
         }
@@ -236,14 +351,9 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
         const compressedContext = results.compressed_prompt;
 
         console.log(`[Chat] ===== SCALEDOWN COMPRESSION =====`);
-        console.log(`[Chat] Original context length: ${uploadedPdfTexts.length} chars`);
+        console.log(`[Chat] Original optimized context length: ${optimizedContext.length} chars`);
         console.log(`[Chat] Compressed context length: ${compressedContext.length} chars`);
-        console.log(`[Chat] Original tokens: ${results.original_prompt_tokens}`);
-        console.log(`[Chat] Compressed tokens: ${results.compressed_prompt_tokens}`);
-        console.log(`[Chat] Compression ratio: ${results.compression_ratio}`);
-        console.log(`[Chat] Full compressed context being sent to AI:`);
-        console.log(compressedContext);
-        console.log(`[Chat] ===================================`);
+        console.log(`[Chat] ==================================`);
         console.log(`[Chat] Sending to Groq LLM...`);
 
         // Call Groq API with compressed context
@@ -276,7 +386,7 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             res.status(500).json({ 
                 success: false, 
                 error: 'Failed to generate answer with LLM',
-                details: errorText
+                details: 'LLM generation request failed'
             });
             return;
         }
@@ -286,6 +396,24 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
 
         console.log(`[Chat] AI Answer generated successfully`);
 
+        const baselineEstimatedTokens = estimateTokens(baselineContext);
+        const optimizedEstimatedTokens = estimateTokens(optimizedContext);
+        const compressedTokens = results.compressed_prompt_tokens || scaledownData.total_compressed_tokens || estimateTokens(compressedContext);
+        const routingSavingsPct = baselineEstimatedTokens > 0
+            ? Math.round(((baselineEstimatedTokens - optimizedEstimatedTokens) / baselineEstimatedTokens) * 100)
+            : 0;
+        const totalSavingsPct = baselineEstimatedTokens > 0
+            ? Math.round(((baselineEstimatedTokens - compressedTokens) / baselineEstimatedTokens) * 100)
+            : 0;
+
+        const selectedChapters = selectedSections.map((section) => ({
+            documentId: section.documentId,
+            fileName: section.fileName,
+            sectionId: section.sectionId,
+            chapterTitle: section.sectionTitle,
+            relevanceScore: section.score,
+        }));
+
         // Return both ScaleDown and AI responses
         res.json({
             success: true,
@@ -293,8 +421,8 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             scaledownResponse: {
                 original_prompt: question,
                 compressed_prompt: compressedContext,
-                original_tokens: results.original_prompt_tokens || scaledownData.total_original_tokens,
-                compressed_tokens: results.compressed_prompt_tokens || scaledownData.total_compressed_tokens,
+                original_tokens: results.original_prompt_tokens || scaledownData.total_original_tokens || optimizedEstimatedTokens,
+                compressed_tokens: compressedTokens,
                 compression_ratio: results.compression_ratio || 0
             },
             aiResponse: {
@@ -303,8 +431,15 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
                 tokens_used: groqData.usage?.total_tokens
             },
             metadata: {
-                original_tokens: results.original_prompt_tokens || scaledownData.total_original_tokens,
-                compressed_tokens: results.compressed_prompt_tokens || scaledownData.total_compressed_tokens,
+                baseline_estimated_tokens: baselineEstimatedTokens,
+                optimized_estimated_tokens: optimizedEstimatedTokens,
+                original_tokens: results.original_prompt_tokens || scaledownData.total_original_tokens || optimizedEstimatedTokens,
+                compressed_tokens: compressedTokens,
+                routing_savings_pct: routingSavingsPct,
+                total_savings_pct: totalSavingsPct,
+                selected_chapters: selectedChapters,
+                selected_sections_count: selectedSections.length,
+                total_sections_count: sectionCandidates.length,
                 compression_rate: scaledownData.request_metadata?.compression_rate || 'auto',
                 scaledown_latency_ms: scaledownData.latency_ms,
                 llm_tokens_used: groqData.usage?.total_tokens
@@ -319,4 +454,62 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
+}
+
+export function handleBenchmark(req: Request, res: Response): void {
+    const { question } = req.body;
+    const sessionId = req.session.id;
+
+    if (!question) {
+        res.status(400).json({ success: false, error: 'Question is required' });
+        return;
+    }
+
+    const session = sessionStore.get(sessionId);
+    if (!session || session.documents.length === 0) {
+        res.status(400).json({
+            success: false,
+            error: 'No documents uploaded. Please upload a PDF first.'
+        });
+        return;
+    }
+
+    const baselineContext = session.documents
+        .map((doc) => `[${doc.fileName}]\n${doc.text}`)
+        .join('\n\n---\n\n');
+
+    const questionTokens = tokenize(question);
+    const sectionCandidates = session.documents.flatMap((doc) =>
+        doc.sections.map((section) => ({
+            fileName: doc.fileName,
+            sectionTitle: section.title,
+            sectionText: section.text,
+            score: scoreSection(questionTokens, section.text, section.title),
+        }))
+    );
+
+    const selectedSections = sectionCandidates
+        .sort((a, b) => b.score - a.score)
+        .slice(0, MAX_SECTIONS_FOR_SCALEDOWN);
+
+    const optimizedContext = selectedSections
+        .map((section) => `[${section.fileName} | ${section.sectionTitle}]\n${section.sectionText}`)
+        .join('\n\n---\n\n');
+
+    const baselineEstimatedTokens = estimateTokens(baselineContext);
+    const optimizedEstimatedTokens = estimateTokens(optimizedContext);
+    const savingsPct = baselineEstimatedTokens > 0
+        ? Math.round(((baselineEstimatedTokens - optimizedEstimatedTokens) / baselineEstimatedTokens) * 100)
+        : 0;
+
+    res.json({
+        success: true,
+        benchmark: {
+            baseline_estimated_tokens: baselineEstimatedTokens,
+            optimized_estimated_tokens: optimizedEstimatedTokens,
+            routing_savings_pct: savingsPct,
+            selected_sections_count: selectedSections.length,
+            total_sections_count: sectionCandidates.length,
+        }
+    });
 }

@@ -5,6 +5,14 @@ export interface Document {
     pageCount: number;
     uploadedAt: number;
     buffer: Buffer; // Store the original PDF buffer
+    sections: DocumentSection[];
+}
+
+export interface DocumentSection {
+    id: string;
+    title: string;
+    text: string;
+    charCount: number;
 }
 
 export interface Session {

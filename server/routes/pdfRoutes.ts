@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadPdfs } from '../middleware/upload';
-import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument, handleChat } from '../controllers/pdfController';
+import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument, handleChat, handleBenchmark } from '../controllers/pdfController';
 
 const router = Router();
 
@@ -21,5 +21,8 @@ router.post('/end-session', handleEndSession);
 
 // POST /api/chat — Ask a question about uploaded documents
 router.post('/chat', handleChat);
+
+// POST /api/benchmark — Compare baseline vs context-pruned routing
+router.post('/benchmark', handleBenchmark);
 
 export default router;

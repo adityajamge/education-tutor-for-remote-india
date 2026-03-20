@@ -11,6 +11,19 @@ import TokenStatsBar from './components/TokenStatsBar';
 import { useDocuments } from './hooks/useDocuments';
 import './App.css';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+interface TokenStats {
+  baselineTokens: number;
+  optimizedTokens: number;
+  compressedTokens: number;
+  routingSavings: number;
+  totalSavings: number;
+  selectedCount: number;
+  totalCount: number;
+  selectedChapters: string[];
+}
+
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -18,13 +31,8 @@ function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
   const [showPdfSidebar, setShowPdfSidebar] = useState(false);
-  const [tokenStats, setTokenStats] = useState<{
-    originalTokens: number;
-    compressedTokens: number;
-    savings: number;
-  } | null>(null);
+  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
 
-  // Handle PDF preview with animation
   const handleViewPdf = (pdf: { url: string; fileName: string } | null) => {
     if (pdf) {
       setPdfPreview(pdf);
@@ -34,7 +42,6 @@ function AppContent() {
     }
   };
 
-  // Hook for managing documents and PDF uploads via Backend APIs
   const { documents, isUploading, error, uploadFiles, removeDocument, endSession } = useDocuments();
 
   const sendMessage = useCallback(async (content: string) => {
@@ -49,13 +56,12 @@ function AppContent() {
     setIsLoading(true);
 
     try {
-      // Call backend API
-      const response = await fetch('http://localhost:3000/api/chat', {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for session cookies
+        credentials: 'include',
         body: JSON.stringify({ question: content }),
       });
 
@@ -65,7 +71,6 @@ function AppContent() {
         throw new Error(data.error || 'Failed to get response');
       }
 
-      // Display only AI response
       const aiMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -74,24 +79,26 @@ function AppContent() {
       };
       setMessages((prev) => [...prev, aiMsg]);
 
-      // Update token stats from ScaleDown metadata
       if (data.metadata) {
-        const savings = data.metadata.original_tokens > 0
-          ? Math.round(((data.metadata.original_tokens - data.metadata.compressed_tokens) / data.metadata.original_tokens) * 100)
-          : 0;
-
         setTokenStats({
-          originalTokens: data.metadata.original_tokens,
-          compressedTokens: data.metadata.compressed_tokens,
-          savings,
+          baselineTokens: data.metadata.baseline_estimated_tokens || 0,
+          optimizedTokens: data.metadata.optimized_estimated_tokens || data.metadata.original_tokens || 0,
+          compressedTokens: data.metadata.compressed_tokens || 0,
+          routingSavings: data.metadata.routing_savings_pct || 0,
+          totalSavings: data.metadata.total_savings_pct || 0,
+          selectedCount: data.metadata.selected_sections_count || 0,
+          totalCount: data.metadata.total_sections_count || 0,
+          selectedChapters: (data.metadata.selected_chapters || [])
+            .slice(0, 5)
+            .map((entry: { fileName: string; chapterTitle: string }) => `${entry.fileName}: ${entry.chapterTitle}`),
         });
       }
-    } catch (error) {
-      console.error('Chat error:', error);
+    } catch (chatError) {
+      console.error('Chat error:', chatError);
       const errorMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `❌ Error: ${error instanceof Error ? error.message : 'Failed to get response. Please make sure you have uploaded a PDF first.'}`,
+        content: `Error: ${chatError instanceof Error ? chatError.message : 'Failed to get response. Please upload a PDF first.'}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -122,7 +129,6 @@ function AppContent() {
       />
 
       <main className="main">
-        {/* Top bar */}
         <header className="topbar" id="topbar">
           <div className="topbar__left">
             <h2 className="topbar__title">Chat</h2>
@@ -133,8 +139,15 @@ function AppContent() {
           </div>
         </header>
 
-        {/* Content */}
         <div className="main__content">
+          {tokenStats && (
+            <div className="pruning-summary">
+              <strong>Context Routing:</strong> Selected {tokenStats.selectedCount}/{tokenStats.totalCount} sections.
+              {tokenStats.selectedChapters.length > 0 && (
+                <span className="pruning-summary__chapters"> Top chapters: {tokenStats.selectedChapters.join(' | ')}</span>
+              )}
+            </div>
+          )}
           {messages.length === 0 ? (
             <WelcomeScreen />
           ) : (
@@ -147,7 +160,6 @@ function AppContent() {
           )}
         </div>
 
-        {/* Input area with PDF attachment button integrated */}
         <ChatInput
           onSend={sendMessage}
           disabled={isLoading || isUploading}
@@ -156,7 +168,6 @@ function AppContent() {
         />
       </main>
 
-      {/* PDF Preview Sidebar - Always rendered for smooth transition */}
       <PdfPreviewSidebar
         pdfUrl={pdfPreview?.url || ''}
         fileName={pdfPreview?.fileName || ''}
@@ -165,109 +176,6 @@ function AppContent() {
       />
     </div>
   );
-}
-
-// Simulated responses for demo purposes
-function getSimulatedResponse(question: string): string {
-  const lowerQ = question.toLowerCase();
-
-  if (lowerQ.includes('photosynthesis')) {
-    return `## 🌱 Photosynthesis
-
-Photosynthesis is the process by which **green plants** convert sunlight into food (glucose).
-
-### The Equation:
-\`\`\`
-6CO₂ + 6H₂O + Light Energy → C₆H₁₂O₆ + 6O₂
-\`\`\`
-
-### Key Points:
-- Takes place in **chloroplasts** (specifically in the chlorophyll)
-- Requires **sunlight**, **carbon dioxide**, and **water**
-- Produces **glucose** (food) and **oxygen** (released into air)
-
-### Two Stages:
-1. **Light Reaction** – Occurs in the thylakoid membrane, converts light energy
-2. **Dark Reaction (Calvin Cycle)** – Occurs in the stroma, produces glucose
-
-> 💡 *Fun fact: Without photosynthesis, there would be no oxygen on Earth for us to breathe!*`;
-  }
-
-  if (lowerQ.includes('pythagoras') || lowerQ.includes('pythagorean')) {
-    return `## 📐 Pythagoras Theorem
-
-The **Pythagorean theorem** states that in a **right-angled triangle**:
-
-> **a² + b² = c²**
-
-Where:
-- **a** and **b** are the two shorter sides (legs)
-- **c** is the longest side (hypotenuse)
-
-### Example:
-If a = 3 and b = 4, then:
-\`\`\`
-c² = 3² + 4² = 9 + 16 = 25
-c = √25 = 5
-\`\`\`
-
-### Applications:
-- Finding distances
-- Construction and architecture
-- Navigation and map reading`;
-  }
-
-  if (lowerQ.includes('water cycle')) {
-    return `## 💧 The Water Cycle
-
-The water cycle describes the continuous movement of water on, above, and below the Earth's surface.
-
-### Stages:
-1. **Evaporation** – Sun heats water in oceans/rivers, turning it into vapor
-2. **Condensation** – Water vapor rises, cools, and forms clouds
-3. **Precipitation** – Water falls back as rain, snow, or hail
-4. **Collection** – Water collects in rivers, lakes, and oceans
-
-### Key Facts:
-- The water cycle has **no beginning or end** – it's continuous
-- About **97%** of Earth's water is in the oceans
-- Only **3%** is freshwater, and most is frozen in glaciers`;
-  }
-
-  if (lowerQ.includes('newton')) {
-    return `## 🍎 Newton's Laws of Motion
-
-### First Law (Law of Inertia):
-> An object at rest stays at rest, and an object in motion stays in motion, unless acted upon by an external force.
-
-**Example:** A book on a table won't move unless someone pushes it.
-
-### Second Law (F = ma):
-> Force equals mass times acceleration.
-
-**Example:** Pushing a heavy box requires more force than pushing a light one.
-
-### Third Law (Action-Reaction):
-> For every action, there is an equal and opposite reaction.
-
-**Example:** When you push against a wall, the wall pushes back against you with equal force.`;
-  }
-
-  return `Thank you for your question! Let me help you understand this topic.
-
-Based on your query: **"${question}"**
-
-I'll search through the relevant textbook content and provide you with a comprehensive explanation. Here's what I found:
-
-### Key Concepts:
-- This topic is commonly covered in state-board curriculum
-- Understanding the fundamentals is crucial for exam preparation
-- Practice with examples helps reinforce the concepts
-
-### Summary:
-This is a simulated response for demonstration purposes. Once the backend is connected, I'll provide detailed explanations from your actual textbook content, compressed efficiently using ScaleDown API for faster responses.
-
-> 📚 *Tip: Try asking specific questions about topics from your textbook for the best answers!*`;
 }
 
 function App() {

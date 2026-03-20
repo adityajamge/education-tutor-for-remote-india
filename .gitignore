@@ -37,3 +37,6 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# Submission hygiene
+temp.html

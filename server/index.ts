@@ -5,13 +5,21 @@ import session from 'express-session';
 import pdfRoutes from './routes/pdfRoutes';
 
 const app = express();
-const port: number = 3000;
+const port: number = Number(process.env.PORT) || 3000;
+const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be set in production');
+}
+
+const sessionSecret = process.env.SESSION_SECRET || 'edututor-dev-secret-key';
 
 // --- Middleware ---
 
 // Allow frontend (Vite dev server) to communicate with backend
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: frontendOrigin,
   credentials: true, // Required for session cookies
 }));
 
@@ -20,12 +28,13 @@ app.use(express.json());
 
 // Session middleware — gives each user a unique session ID
 app.use(session({
-  secret: 'edututor-dev-secret-key',
+  secret: sessionSecret,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
     maxAge: 30 * 60 * 1000, // 30 minutes
     httpOnly: true,
+    sameSite: 'lax',
   },
 }));
 
