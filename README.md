@@ -24,8 +24,8 @@ Create `server/.env`:
 PORT=3000
 FRONTEND_ORIGIN=http://localhost:5173
 SESSION_SECRET=replace-with-a-secure-random-string
-SCALEDOWN_API=your_scaledown_api_key
-GROQ_API=your_groq_api_key
+SCALEDOWN_API_KEY=your_scaledown_api_key
+GROQ_API_KEY=your_groq_api_key
 
 # Optional benchmark pricing assumptions (INR)
 BENCH_INR_PER_1K_INPUT=0

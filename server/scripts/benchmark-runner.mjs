@@ -7,14 +7,14 @@ const INR_PER_1K_INPUT = Number(process.env.BENCH_INR_PER_1K_INPUT || '0');
 const INR_PER_1K_OUTPUT = Number(process.env.BENCH_INR_PER_1K_OUTPUT || '0');
 
 const QUESTIONS = [
-  'Summarize the key ideas of this chapter in 5 points.',
-  'Explain the topic in simple terms for class 8 students.',
-  'What are the important definitions and formulas from this section?',
-  'Create 5 exam-style questions with short answers from the relevant chapter.',
-  'What are common mistakes students make in this topic and how to avoid them?',
-  'Give a step-by-step explanation with one practical example.',
-  'List likely board exam questions from this material.',
-  'Provide a quick revision checklist from the most relevant section.',
+  'What are the main functional requirements described in this document?',
+  'Summarize the non-functional requirements and performance constraints.',
+  'List key user roles or actors and their responsibilities.',
+  'What are the core system modules or components mentioned?',
+  'Extract integration or API-related requirements from the relevant section.',
+  'Identify security or privacy requirements in this document.',
+  'What assumptions or constraints are specified for deployment?',
+  'Create a short acceptance checklist from the most relevant requirements section.',
 ];
 
 function nowStamp() {
@@ -94,6 +94,23 @@ async function httpJson(endpoint, { method = 'GET', body, cookie } = {}) {
   }
 
   return { payload, cookie: parsedCookie };
+}
+
+async function retryHttpJson(endpoint, options, attempts = 3, delayMs = 1200) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await httpJson(endpoint, options);
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function uploadPdfs(cookie) {
@@ -216,11 +233,11 @@ async function main() {
 
     sessionCookie = benchmark.cookie || sessionCookie;
 
-    const chat = await httpJson('/chat', {
+    const chat = await retryHttpJson('/chat', {
       method: 'POST',
       body: { question },
       cookie: sessionCookie,
-    });
+    }, 3, 1500);
 
     sessionCookie = chat.cookie || sessionCookie;
 

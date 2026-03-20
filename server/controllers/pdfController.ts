@@ -4,25 +4,28 @@ import { v4 as uuidv4 } from 'uuid';
 import { DocumentSection, sessionStore } from '../utils/sessionStore';
 
 const MAX_SECTIONS_FOR_SCALEDOWN = 8;
-const FALLBACK_SECTION_CHAR_LIMIT = 12000;
+const MAX_SELECTED_RELEVANT_SECTIONS = 3;
+const FALLBACK_CHUNK_SIZE = 3500;
+const FALLBACK_CHUNK_OVERLAP = 300;
+const STOPWORDS = new Set([
+    'about', 'after', 'again', 'also', 'answer', 'chapter', 'define', 'definitions', 'document',
+    'exam', 'explain', 'from', 'give', 'important', 'into', 'list', 'main', 'make', 'most',
+    'notes', 'points', 'practical', 'provide', 'question', 'questions', 'quick', 'revision',
+    'section', 'short', 'simple', 'summarize', 'takeaways', 'terms', 'text', 'that', 'the',
+    'them', 'this', 'topic', 'with', 'what', 'your'
+]);
 
 function normalizeWhitespace(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
 }
 
 function splitIntoSections(rawText: string): DocumentSection[] {
-    const text = rawText.replace(/\r/g, '');
-    const headingRegex = /(^|\n)(?:chapter|unit|lesson)\s+\d+[\s:.-]*([^\n]{0,80})/gim;
+    const text = rawText.replace(/\r/g, '').trim();
+    const headingRegex = /(^|\n)(?:chapter|unit|lesson|module|topic|section|part)\s+[a-z0-9ivx]+[\s:.-]*([^\n]{0,100})/gim;
     const matches = Array.from(text.matchAll(headingRegex));
 
-    if (matches.length === 0) {
-        const trimmed = text.trim().slice(0, FALLBACK_SECTION_CHAR_LIMIT);
-        return [{
-            id: uuidv4(),
-            title: 'Full Text',
-            text: trimmed,
-            charCount: trimmed.length,
-        }];
+    if (!text) {
+        return [];
     }
 
     const sections: DocumentSection[] = [];
@@ -46,17 +49,43 @@ function splitIntoSections(rawText: string): DocumentSection[] {
         });
     }
 
-    if (sections.length === 0) {
-        const trimmed = text.trim().slice(0, FALLBACK_SECTION_CHAR_LIMIT);
-        sections.push({
-            id: uuidv4(),
-            title: 'Full Text',
-            text: trimmed,
-            charCount: trimmed.length,
-        });
+    if (sections.length >= 2) {
+        return sections;
     }
 
-    return sections;
+    // Fallback splitter for notes/PDFs without explicit chapter markers.
+    // This guarantees multi-section routing even when heading detection is weak.
+    const fallbackSections: DocumentSection[] = [];
+    let cursor = 0;
+    let chunkIndex = 1;
+
+    while (cursor < text.length) {
+        const end = Math.min(cursor + FALLBACK_CHUNK_SIZE, text.length);
+        const chunk = text.slice(cursor, end).trim();
+
+        if (chunk) {
+            fallbackSections.push({
+                id: uuidv4(),
+                title: `Chunk ${chunkIndex}`,
+                text: chunk,
+                charCount: chunk.length,
+            });
+            chunkIndex++;
+        }
+
+        if (end >= text.length) {
+            break;
+        }
+
+        cursor = Math.max(end - FALLBACK_CHUNK_OVERLAP, cursor + 1);
+    }
+
+    return fallbackSections.length > 0 ? fallbackSections : [{
+        id: uuidv4(),
+        title: 'Full Text',
+        text,
+        charCount: text.length,
+    }];
 }
 
 function tokenize(text: string): Set<string> {
@@ -65,7 +94,7 @@ function tokenize(text: string): Set<string> {
             .toLowerCase()
             .replace(/[^a-z0-9\s]/g, ' ')
             .split(/\s+/)
-            .filter((token) => token.length > 2)
+            .filter((token) => token.length > 3 && !STOPWORDS.has(token))
     );
 }
 
@@ -94,6 +123,7 @@ export async function handleUpload(req: Request, res: Response): Promise<void> {
         }
 
         // Get session ID from express-session
+        req.session.lastSeenAt = Date.now();
         const sessionId = req.session.id;
         console.log(`[Upload] Session ID: ${sessionId}`);
         
@@ -292,9 +322,9 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             .sort((a, b) => b.score - a.score)
             .slice(0, MAX_SECTIONS_FOR_SCALEDOWN);
 
-        const selectedSections = rankedSections.some((section) => section.score > 0)
-            ? rankedSections.filter((section) => section.score > 0)
-            : rankedSections;
+        const selectedSections = rankedSections.some((section) => section.score >= 2)
+            ? rankedSections.filter((section) => section.score >= 2).slice(0, MAX_SELECTED_RELEVANT_SECTIONS)
+            : rankedSections.slice(0, Math.min(2, rankedSections.length));
 
         const optimizedContext = selectedSections
             .map((section) => `[${section.fileName} | ${section.sectionTitle}]\n${section.sectionText}`)
@@ -326,7 +356,7 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
         const scaledownResponse = await fetch('https://api.scaledown.xyz/compress/raw/', {
             method: 'POST',
             headers: {
-                'x-api-key': process.env.SCALEDOWN_API || '',
+                'x-api-key': process.env.SCALEDOWN_API_KEY || '',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestBody)
@@ -360,7 +390,7 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API}`,
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -397,7 +427,10 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
         console.log(`[Chat] AI Answer generated successfully`);
 
         const baselineEstimatedTokens = estimateTokens(baselineContext);
-        const optimizedEstimatedTokens = estimateTokens(optimizedContext);
+        const optimizedEstimatedTokens = Math.min(
+            estimateTokens(optimizedContext),
+            baselineEstimatedTokens
+        );
         const compressedTokens = results.compressed_prompt_tokens || scaledownData.total_compressed_tokens || estimateTokens(compressedContext);
         const routingSavingsPct = baselineEstimatedTokens > 0
             ? Math.round(((baselineEstimatedTokens - optimizedEstimatedTokens) / baselineEstimatedTokens) * 100)
@@ -488,16 +521,23 @@ export function handleBenchmark(req: Request, res: Response): void {
         }))
     );
 
-    const selectedSections = sectionCandidates
+    const rankedSections = sectionCandidates
         .sort((a, b) => b.score - a.score)
         .slice(0, MAX_SECTIONS_FOR_SCALEDOWN);
+
+    const selectedSections = rankedSections.some((section) => section.score >= 2)
+        ? rankedSections.filter((section) => section.score >= 2).slice(0, MAX_SELECTED_RELEVANT_SECTIONS)
+        : rankedSections.slice(0, Math.min(2, rankedSections.length));
 
     const optimizedContext = selectedSections
         .map((section) => `[${section.fileName} | ${section.sectionTitle}]\n${section.sectionText}`)
         .join('\n\n---\n\n');
 
     const baselineEstimatedTokens = estimateTokens(baselineContext);
-    const optimizedEstimatedTokens = estimateTokens(optimizedContext);
+    const optimizedEstimatedTokens = Math.min(
+        estimateTokens(optimizedContext),
+        baselineEstimatedTokens
+    );
     const savingsPct = baselineEstimatedTokens > 0
         ? Math.round(((baselineEstimatedTokens - optimizedEstimatedTokens) / baselineEstimatedTokens) * 100)
         : 0;

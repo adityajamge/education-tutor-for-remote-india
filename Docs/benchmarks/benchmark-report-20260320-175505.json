@@ -1,0 +1,147 @@
+{
+  "generatedAt": "2026-03-20T12:24:28.939Z",
+  "apiBase": "http://localhost:3000/api",
+  "pricing": {
+    "inr_per_1k_input_tokens": 0,
+    "inr_per_1k_output_tokens": 0,
+    "note": "INR estimates are optional and user-configured assumptions."
+  },
+  "questions": [
+    "What are the main functional requirements described in this document?",
+    "Summarize the non-functional requirements and performance constraints.",
+    "List key user roles or actors and their responsibilities.",
+    "What are the core system modules or components mentioned?",
+    "Extract integration or API-related requirements from the relevant section.",
+    "Identify security or privacy requirements in this document.",
+    "What assumptions or constraints are specified for deployment?",
+    "Create a short acceptance checklist from the most relevant requirements section."
+  ],
+  "rows": [
+    {
+      "question": "What are the main functional requirements described in this document?",
+      "baselineTokens": 2597,
+      "optimizedTokens": 2597,
+      "compressedTokens": 1543,
+      "routingSavingsPct": 0,
+      "totalSavingsPct": 41,
+      "selectedSections": 3,
+      "totalSections": 4,
+      "outputTokens": 1790,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "Summarize the non-functional requirements and performance constraints.",
+      "baselineTokens": 2597,
+      "optimizedTokens": 2597,
+      "compressedTokens": 662,
+      "routingSavingsPct": 0,
+      "totalSavingsPct": 75,
+      "selectedSections": 3,
+      "totalSections": 4,
+      "outputTokens": 1004,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "List key user roles or actors and their responsibilities.",
+      "baselineTokens": 2597,
+      "optimizedTokens": 1770,
+      "compressedTokens": 346,
+      "routingSavingsPct": 32,
+      "totalSavingsPct": 87,
+      "selectedSections": 2,
+      "totalSections": 4,
+      "outputTokens": 609,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "What are the core system modules or components mentioned?",
+      "baselineTokens": 2597,
+      "optimizedTokens": 1770,
+      "compressedTokens": 835,
+      "routingSavingsPct": 32,
+      "totalSavingsPct": 68,
+      "selectedSections": 2,
+      "totalSections": 4,
+      "outputTokens": 1101,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "Extract integration or API-related requirements from the relevant section.",
+      "baselineTokens": 2597,
+      "optimizedTokens": 2597,
+      "compressedTokens": 1075,
+      "routingSavingsPct": 0,
+      "totalSavingsPct": 59,
+      "selectedSections": 3,
+      "totalSections": 4,
+      "outputTokens": 1328,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "Identify security or privacy requirements in this document.",
+      "baselineTokens": 2597,
+      "optimizedTokens": 2597,
+      "compressedTokens": 519,
+      "routingSavingsPct": 0,
+      "totalSavingsPct": 80,
+      "selectedSections": 3,
+      "totalSections": 4,
+      "outputTokens": 696,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "What assumptions or constraints are specified for deployment?",
+      "baselineTokens": 2597,
+      "optimizedTokens": 1770,
+      "compressedTokens": 593,
+      "routingSavingsPct": 32,
+      "totalSavingsPct": 77,
+      "selectedSections": 2,
+      "totalSections": 4,
+      "outputTokens": 843,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    },
+    {
+      "question": "Create a short acceptance checklist from the most relevant requirements section.",
+      "baselineTokens": 2597,
+      "optimizedTokens": 2597,
+      "compressedTokens": 587,
+      "routingSavingsPct": 0,
+      "totalSavingsPct": 77,
+      "selectedSections": 3,
+      "totalSections": 4,
+      "outputTokens": 914,
+      "baselineCostInr": null,
+      "optimizedCostInr": null,
+      "compressedCostInr": null
+    }
+  ],
+  "totals": {
+    "avgBaselineTokens": 2597,
+    "avgOptimizedTokens": 2286.88,
+    "avgCompressedTokens": 770,
+    "avgRoutingSavingsPct": 12,
+    "avgTotalSavingsPct": 70.5,
+    "avgBaselineCostInr": null,
+    "avgOptimizedCostInr": null,
+    "avgCompressedCostInr": null
+  },
+  "assertions": {
+    "passed": true,
+    "failed": []
+  }
+}
