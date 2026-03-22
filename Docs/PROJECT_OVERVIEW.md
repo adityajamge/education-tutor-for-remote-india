@@ -4,9 +4,7 @@
 **Education Tutor for Remote India** is an AI tutoring platform designed for low-bandwidth, cost-sensitive environments. It ingests state-board textbook PDFs and answers student questions with curriculum-aligned responses while minimizing token cost and data transfer.
 
 Core objective: **reduce per-query cost and latency** without sacrificing answer quality.
-
 ---
-
 ## 2. What We Built
 
 ### 2.1 End-to-End Workflow
