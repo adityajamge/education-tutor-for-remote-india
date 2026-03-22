@@ -15,6 +15,7 @@
    - Frontend Visualization
    - Chat Persistence & Export
    - Voice Input (Web Speech API)
+   - Text-to-Speech (Audio Answers)
    - Automated Benchmarking
 6. [Implementation Details](#implementation-details)
 7. [Data Flow](#data-flow)
@@ -672,7 +673,93 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 ---
 
-### Feature 9: Automated Benchmarking
+### Feature 9: Text-to-Speech (Audio Answers)
+
+**What It Does:**
+- Listen to AI answers instead of reading
+- Click speaker icon to hear response
+- Great for multitasking and accessibility
+- Uses browser's built-in speech synthesis
+
+**How It Works:**
+
+1. **Speech Synthesis:**
+   ```typescript
+   const utterance = new SpeechSynthesisUtterance(cleanText);
+   utterance.lang = 'en-IN'; // Indian English
+   utterance.rate = 0.9; // Slightly slower for clarity
+   utterance.pitch = 1.0;
+   utterance.volume = 1.0;
+   window.speechSynthesis.speak(utterance);
+   ```
+
+2. **Text Cleaning:**
+   - Removes markdown formatting (**, *, #, `)
+   - Removes links (keeps link text)
+   - Replaces newlines with pauses
+   - Makes speech more natural
+
+3. **Controls:**
+   - Click speaker icon → Start speaking
+   - Click again → Stop speaking
+   - Visual feedback (pulsing red when active)
+   - Auto-cleanup on unmount
+
+**Browser Support:**
+- ✅ Chrome/Edge (excellent voices)
+- ✅ Safari (good quality)
+- ✅ Firefox (basic support)
+- Works on all modern browsers
+
+**Why This Matters:**
+
+**Accessibility:**
+- Students with visual impairments can listen
+- Dyslexic students benefit from audio
+- Reduces eye strain from reading
+
+**Multitasking:**
+- Listen while doing homework
+- Learn while commuting
+- Audio revision while cooking/cleaning
+
+**Learning Enhancement:**
+- Audio + visual = better retention
+- Different learning styles supported
+- Can replay difficult concepts
+
+**Rural India Context:**
+- Many students prefer audio learning
+- Reduces literacy barriers
+- Works offline (browser-based)
+- Zero cost (no API needed)
+
+**Code Location:**
+- `client/src/components/ChatArea.tsx` - TTS implementation
+- `client/src/App.css` - Speaking animation
+
+**Technical Details:**
+- Uses Web Speech Synthesis API (no external dependencies)
+- Zero cost (runs in browser)
+- Privacy-friendly (no data sent to servers)
+- Instant playback
+- Automatic cleanup prevents memory leaks
+
+**Visual Feedback:**
+- Speaker icon (Volume2) when idle
+- Mute icon (VolumeX) when speaking
+- Pulsing red animation during playback
+- Tooltip shows "Listen to answer" / "Stop speaking"
+
+**User Experience:**
+- Appears next to copy button on AI messages
+- Only visible on hover (clean UI)
+- Click to toggle play/stop
+- Smooth transitions
+
+---
+
+### Feature 10: Automated Benchmarking
 
 **What It Does:**
 - Runs 8 test questions automatically
@@ -1586,6 +1673,7 @@ node -e "require('dotenv').config(); console.log('Key:', process.env.SCALEDOWN_A
 ✅ **Chat persistence** - Messages survive browser close/refresh
 ✅ **PDF export** - Theme-aware export for offline study
 ✅ **Voice input** - Speak questions (accessibility + lower literacy barrier)
+✅ **Text-to-Speech** - Listen to answers (multitasking + accessibility)
 ✅ **Automated benchmarking** - Reproducible evidence
 ✅ **Rich metadata** - Full transparency of optimization
 ✅ **Production-ready** - Security, error handling, logging

@@ -185,7 +185,7 @@ export default function ExportChatButton({ disabled }: ExportChatButtonProps) {
       ) : (
         <>
           <Download size={18} />
-          <span>Export PDF</span>
+          <span>Export As PDF</span>
         </>
       )}
     </button>

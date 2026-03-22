@@ -961,6 +961,40 @@ body {
     background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 }
 
+.chat-message__speak {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.chat-message__speak:hover {
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.chat-message__speak.speaking {
+    color: var(--accent-danger);
+    background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
+    animation: pulse-speak 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-speak {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
 /* ---------- Typing Indicator ---------- */
 .typing-indicator {
     display: flex;
