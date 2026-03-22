@@ -15,8 +15,17 @@ export interface DocumentSection {
     charCount: number;
 }
 
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+    metadata?: any;
+}
+
 export interface Session {
     documents: Document[];
+    messages: ChatMessage[];
     createdAt: number;
 }
 
@@ -40,7 +49,7 @@ export const sessionStore = {
     getOrCreate(sessionId: string): Session {
         let session = store.get(sessionId);
         if (!session) {
-            session = { documents: [], createdAt: Date.now() };
+            session = { documents: [], messages: [], createdAt: Date.now() };
             store.set(sessionId, session);
         }
         return session;

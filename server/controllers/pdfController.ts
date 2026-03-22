@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import pdfParse from 'pdf-parse';
 import { v4 as uuidv4 } from 'uuid';
 import { DocumentSection, sessionStore } from '../utils/sessionStore';
+import { getCachedResponse, setCachedResponse, clearDocumentCache } from '../utils/queryCache';
+import { getCacheStats } from '../utils/queryCache';
 
 const MAX_SECTIONS_FOR_SCALEDOWN = 8;
 const MAX_SELECTED_RELEVANT_SECTIONS = 3;
@@ -222,6 +224,11 @@ export function handleRemoveDocument(req: Request, res: Response): void {
 
     sessionStore.set(sessionId, session);
 
+    // Clear cache since document set changed
+    const documentIds = session.documents.map(d => d.id);
+    clearDocumentCache(documentIds);
+    console.log(`[RemoveDocument] Cache cleared for updated document set`);
+
     res.json({
         success: true,
         remainingDocuments: session.documents.map((d) => ({
@@ -237,10 +244,15 @@ export function handleEndSession(req: Request, res: Response): void {
     const session = sessionStore.get(sessionId);
     
     if (session) {
-        // Clear documents but keep the session
+        // Clear cache for this document set
+        const documentIds = session.documents.map(d => d.id);
+        clearDocumentCache(documentIds);
+        
+        // Clear BOTH documents AND messages
         session.documents = [];
+        session.messages = [];
         sessionStore.set(sessionId, session);
-        console.log(`[EndSession] Cleared documents for session ${sessionId}`);
+        console.log(`[EndSession] Cleared documents, messages, and cache for session ${sessionId}`);
     }
     
     res.json({ success: true, message: 'Session memory cleared' });
@@ -301,6 +313,49 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        // Check cache first
+        const documentIds = session.documents.map(doc => doc.id);
+        const cachedResponse = getCachedResponse(documentIds, question);
+        
+        if (cachedResponse) {
+            console.log(`[Chat] Returning cached response (saved API calls!)`);
+            
+            // Store cached messages in session too
+            session.messages.push(
+                {
+                    id: crypto.randomUUID(),
+                    role: 'user',
+                    content: question,
+                    timestamp: Date.now(),
+                },
+                {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: cachedResponse.answer,
+                    timestamp: Date.now(),
+                    metadata: {
+                        ...cachedResponse.metadata,
+                        cached: true,
+                        cache_hit_count: cachedResponse.hitCount,
+                    },
+                }
+            );
+            sessionStore.set(sessionId, session);
+            
+            res.json({
+                success: true,
+                answer: cachedResponse.answer,
+                scaledownResponse: cachedResponse.scaledownResponse,
+                aiResponse: cachedResponse.aiResponse,
+                metadata: {
+                    ...cachedResponse.metadata,
+                    cached: true,
+                    cache_hit_count: cachedResponse.hitCount,
+                },
+            });
+            return;
+        }
+
         // Baseline context (all documents) for comparison metrics only.
         const baselineContext = session.documents
             .map(doc => `[${doc.fileName}]\n${doc.text}`)
@@ -352,6 +407,8 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
         };
 
         console.log(`[Chat] Request body keys:`, Object.keys(requestBody));
+        console.log(`[Chat] API Key present:`, !!process.env.SCALEDOWN_API_KEY);
+        console.log(`[Chat] API Key length:`, (process.env.SCALEDOWN_API_KEY || '').length);
 
         const scaledownResponse = await fetch('https://api.scaledown.xyz/compress/raw/', {
             method: 'POST',
@@ -362,13 +419,16 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             body: JSON.stringify(requestBody)
         });
 
+        console.log(`[Chat] ScaleDown response status:`, scaledownResponse.status);
+
         if (!scaledownResponse.ok) {
             const errorText = await scaledownResponse.text();
-            console.error('[Chat] ScaleDown API error:', errorText);
+            console.error('[Chat] ScaleDown API error status:', scaledownResponse.status);
+            console.error('[Chat] ScaleDown API error body:', errorText);
             res.status(500).json({ 
                 success: false, 
                 error: 'Failed to compress context with ScaleDown API',
-                details: 'ScaleDown compression request failed'
+                details: errorText
             });
             return;
         }
@@ -447,8 +507,7 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
             relevanceScore: section.score,
         }));
 
-        // Return both ScaleDown and AI responses
-        res.json({
+        const responseData = {
             success: true,
             answer: aiAnswer,
             scaledownResponse: {
@@ -475,9 +534,40 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
                 total_sections_count: sectionCandidates.length,
                 compression_rate: scaledownData.request_metadata?.compression_rate || 'auto',
                 scaledown_latency_ms: scaledownData.latency_ms,
-                llm_tokens_used: groqData.usage?.total_tokens
+                llm_tokens_used: groqData.usage?.total_tokens,
+                cached: false
             }
+        };
+
+        // Cache the response for future queries
+        setCachedResponse(documentIds, question, {
+            question,
+            answer: aiAnswer,
+            metadata: responseData.metadata,
+            scaledownResponse: responseData.scaledownResponse,
+            aiResponse: responseData.aiResponse,
         });
+
+        // Store messages in session for persistence
+        session.messages.push(
+            {
+                id: crypto.randomUUID(),
+                role: 'user',
+                content: question,
+                timestamp: Date.now(),
+            },
+            {
+                id: crypto.randomUUID(),
+                role: 'assistant',
+                content: aiAnswer,
+                timestamp: Date.now(),
+                metadata: responseData.metadata,
+            }
+        );
+        sessionStore.set(sessionId, session);
+
+        // Return both ScaleDown and AI responses
+        res.json(responseData);
 
     } catch (error) {
         console.error('[Chat] Error:', error);
@@ -552,4 +642,47 @@ export function handleBenchmark(req: Request, res: Response): void {
             total_sections_count: sectionCandidates.length,
         }
     });
+}
+
+export function handleCacheStats(req: Request, res: Response): void {
+    const stats = getCacheStats();
+    
+    res.json({
+        success: true,
+        cache: stats,
+        message: `Cache contains ${stats.totalEntries} entries across ${stats.documentGroups} document groups`,
+    });
+}
+
+export function handleGetMessages(req: Request, res: Response): void {
+    const sessionId = req.session.id;
+    const session = sessionStore.get(sessionId);
+
+    if (!session) {
+        res.json({ success: true, messages: [] });
+        return;
+    }
+
+    res.json({
+        success: true,
+        messages: session.messages.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            metadata: msg.metadata,
+        })),
+    });
+}
+
+export function handleClearMessages(req: Request, res: Response): void {
+    const sessionId = req.session.id;
+    const session = sessionStore.get(sessionId);
+
+    if (session) {
+        session.messages = [];
+        sessionStore.set(sessionId, session);
+    }
+
+    res.json({ success: true, message: 'Chat history cleared' });
 }

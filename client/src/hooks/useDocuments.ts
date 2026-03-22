@@ -85,6 +85,8 @@ export function useDocuments() {
                 credentials: 'include',
             });
             setDocuments([]);
+            // Reload page to clear messages from frontend state
+            window.location.reload();
         } catch (err) {
             console.error('Failed to end session', err);
         }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadPdfs } from '../middleware/upload';
-import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument, handleChat, handleBenchmark } from '../controllers/pdfController';
+import { handleUpload, handleSessionStatus, handleRemoveDocument, handleEndSession, handleViewDocument, handleChat, handleBenchmark, handleCacheStats, handleGetMessages, handleClearMessages } from '../controllers/pdfController';
 
 const router = Router();
 
@@ -26,3 +26,12 @@ router.post('/chat', handleChat);
 router.post('/benchmark', handleBenchmark);
 
 export default router;
+
+// GET /api/cache-stats — Get cache statistics
+router.get('/cache-stats', handleCacheStats);
+
+// GET /api/messages — Get chat history
+router.get('/messages', handleGetMessages);
+
+// POST /api/clear-messages — Clear chat history
+router.post('/clear-messages', handleClearMessages);

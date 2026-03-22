@@ -1343,3 +1343,50 @@ body {
 .pruning-summary__chapters {
     color: var(--text-tertiary);
 }
+
+.pruning-summary__cache {
+    color: var(--accent-success);
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* Export Chat Button */
+.export-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.export-chat-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.export-chat-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.export-chat-btn__spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-primary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

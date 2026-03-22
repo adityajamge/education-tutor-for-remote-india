@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import PdfPreviewSidebar from './components/PdfPreviewSidebar';
@@ -8,6 +8,7 @@ import SplashScreen from './components/SplashScreen';
 import ChatArea, { type Message, TypingIndicator } from './components/ChatArea';
 import ChatInput from './components/ChatInput';
 import TokenStatsBar from './components/TokenStatsBar';
+import ExportChatButton from './components/ExportChatButton';
 import { useDocuments } from './hooks/useDocuments';
 import './App.css';
 
@@ -22,6 +23,8 @@ interface TokenStats {
   selectedCount: number;
   totalCount: number;
   selectedChapters: string[];
+  cached?: boolean;
+  cacheHitCount?: number;
 }
 
 function AppContent() {
@@ -43,6 +46,29 @@ function AppContent() {
   };
 
   const { documents, isUploading, error, uploadFiles, removeDocument, endSession } = useDocuments();
+
+  // Restore messages from session on mount
+  useEffect(() => {
+    const restoreMessages = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/messages`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.messages.length > 0) {
+          const restoredMessages: Message[] = data.messages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.timestamp),
+          }));
+          setMessages(restoredMessages);
+        }
+      } catch (err) {
+        console.error('Failed to restore messages:', err);
+      }
+    };
+    
+    restoreMessages();
+  }, []);
 
   const sendMessage = useCallback(async (content: string) => {
     const userMsg: Message = {
@@ -91,6 +117,8 @@ function AppContent() {
           selectedChapters: (data.metadata.selected_chapters || [])
             .slice(0, 5)
             .map((entry: { fileName: string; chapterTitle: string }) => `${entry.fileName}: ${entry.chapterTitle}`),
+          cached: data.metadata.cached || false,
+          cacheHitCount: data.metadata.cache_hit_count || 0,
         });
       }
     } catch (chatError) {
@@ -135,6 +163,7 @@ function AppContent() {
             {tokenStats && <TokenStatsBar stats={tokenStats} />}
           </div>
           <div className="topbar__right">
+            <ExportChatButton disabled={messages.length === 0} />
             <ThemeToggle />
           </div>
         </header>
@@ -143,6 +172,9 @@ function AppContent() {
           {tokenStats && (
             <div className="pruning-summary">
               <strong>Context Routing:</strong> Selected {tokenStats.selectedCount}/{tokenStats.totalCount} sections.
+              {tokenStats.cached && (
+                <span className="pruning-summary__cache"> ⚡ Cached response (hit #{tokenStats.cacheHitCount})</span>
+              )}
               {tokenStats.selectedChapters.length > 0 && (
                 <span className="pruning-summary__chapters"> Top chapters: {tokenStats.selectedChapters.join(' | ')}</span>
               )}
