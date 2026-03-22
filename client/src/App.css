@@ -1430,6 +1430,11 @@ body {
         display: block;
     }
 
+    /* Hide "Learn more" section on mobile */
+    .sidebar__footer {
+        display: none !important;
+    }
+
     /* Main content takes full width */
     .main {
         margin: 0;
@@ -1526,14 +1531,20 @@ body {
         font-size: 0.8rem;
     }
 
-    /* PDF Preview - full screen on mobile */
+    /* PDF Preview - SLIDE FROM BOTTOM (native app style) */
     .pdf-preview-sidebar {
         width: 100%;
-        right: -100%;
+        height: 85vh;
+        top: auto;
+        bottom: -100%;
+        right: 0;
+        left: 0;
+        border-radius: 16px 16px 0 0;
+        transition: bottom var(--transition-base);
     }
 
     .pdf-preview-sidebar--show {
-        right: 0;
+        bottom: 0;
     }
 }
 

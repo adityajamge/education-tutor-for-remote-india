@@ -233,6 +233,49 @@
 
 @media (max-width: 768px) {
     .pdf-preview-sidebar {
-        display: none;
+        position: fixed;
+        width: 100%;
+        height: 85vh;
+        top: auto;
+        bottom: -100%;
+        right: 0;
+        left: 0;
+        margin: 0;
+        border-radius: 16px 16px 0 0;
+        transition: bottom var(--transition-base);
+        z-index: 60;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        opacity: 1;
+    }
+
+    .pdf-preview-sidebar--show {
+        bottom: 0;
+        width: 100%;
+        min-width: 100%;
+        margin: 0;
+    }
+
+    /* Hide expand/collapse button on mobile */
+    .pdf-preview-header__expand,
+    .pdf-preview-header__actions button[title="Collapse"] {
+        display: none !important;
+    }
+
+    /* Add drag handle at top */
+    .pdf-preview-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--text-muted);
+        border-radius: 2px;
+    }
+
+    .pdf-preview-header {
+        padding-top: 20px;
+        position: relative;
     }
 }
