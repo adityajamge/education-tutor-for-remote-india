@@ -32,6 +32,7 @@ function AppContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
   const [showPdfSidebar, setShowPdfSidebar] = useState(false);
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
@@ -149,6 +150,8 @@ function AppContent() {
         onQuestionSelect={handleQuestionSelect}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
         documents={documents}
         error={error}
         onRemove={removeDocument}
@@ -159,6 +162,17 @@ function AppContent() {
       <main className="main">
         <header className="topbar" id="topbar">
           <div className="topbar__left">
+            <button 
+              className="topbar__hamburger"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
             <h2 className="topbar__title">Chat</h2>
             {tokenStats && <TokenStatsBar stats={tokenStats} />}
           </div>

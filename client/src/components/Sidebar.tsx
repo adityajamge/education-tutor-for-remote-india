@@ -35,6 +35,8 @@ interface SidebarProps {
     onQuestionSelect: (question: string) => void;
     collapsed: boolean;
     onToggleCollapse: () => void;
+    mobileOpen?: boolean;
+    onMobileClose?: () => void;
     documents?: Document[];
     onRemove?: (id: string) => void;
     onClearSession?: () => void;
@@ -42,7 +44,7 @@ interface SidebarProps {
     onViewPdf?: (pdf: { url: string; fileName: string }) => void;
 }
 
-export default function Sidebar({ collapsed, onToggleCollapse, documents = [], onRemove, onClearSession, error, onViewPdf }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen = false, onMobileClose, documents = [], onRemove, onClearSession, error, onViewPdf }: SidebarProps) {
     const handleViewPdf = (doc: Document) => {
         if (onViewPdf) {
             const pdfUrl = `http://localhost:3000/api/document/${doc.id}/view`;
@@ -51,7 +53,9 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
     };
 
     return (
-        <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
+        <>
+        {mobileOpen && <div className="sidebar__overlay" onClick={onMobileClose} />}
+        <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''} ${mobileOpen ? 'sidebar--mobile-open' : ''}`}>
             {/* Brand / Toggle Header */}
             <div className={`sidebar__brand ${collapsed ? 'sidebar__brand--collapsed' : ''}`}>
                 <button
@@ -273,5 +277,6 @@ export default function Sidebar({ collapsed, onToggleCollapse, documents = [], o
                 </div>
             )}
         </aside>
+        </>
     );
 }
