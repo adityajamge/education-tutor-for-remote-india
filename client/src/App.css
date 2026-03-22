@@ -424,6 +424,7 @@ body {
     margin-top: auto;
     padding: 12px;
     border-top: 1px solid var(--border-secondary);
+    display: none; /* Hidden on all devices */
 }
 
 .sidebar__info-card {
@@ -1050,6 +1051,7 @@ body {
 .chat-input {
     padding: 12px 24px 16px;
     background: transparent;
+    position: relative;
 }
 
 .chat-input__container {

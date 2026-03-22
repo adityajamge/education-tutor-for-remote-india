@@ -4,12 +4,14 @@ import Sidebar from './components/Sidebar';
 import PdfPreviewSidebar from './components/PdfPreviewSidebar';
 import ThemeToggle from './components/ThemeToggle';
 import WelcomeScreen from './components/WelcomeScreen';
+import PopularQuestions from './components/PopularQuestions';
 import SplashScreen from './components/SplashScreen';
 import ChatArea, { type Message, TypingIndicator } from './components/ChatArea';
 import ChatInput from './components/ChatInput';
 import TokenStatsBar from './components/TokenStatsBar';
 import ExportChatButton from './components/ExportChatButton';
 import { useDocuments } from './hooks/useDocuments';
+import { useQuestionSuggestions } from './hooks/useQuestionSuggestions';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -47,6 +49,21 @@ function AppContent() {
   };
 
   const { documents, isUploading, error, uploadFiles, removeDocument, endSession } = useDocuments();
+  
+  // Question suggestions
+  const { 
+    popularQuestions, 
+    generateQuestions, 
+    isGenerating,
+    fetchPopularQuestions 
+  } = useQuestionSuggestions();
+
+  // Generate questions when documents are uploaded
+  useEffect(() => {
+    if (documents.length > 0 && popularQuestions.length === 0) {
+      generateQuestions().catch(console.error);
+    }
+  }, [documents.length]);
 
   // Restore messages from session on mount
   useEffect(() => {
@@ -195,7 +212,16 @@ function AppContent() {
             </div>
           )}
           {messages.length === 0 ? (
-            <WelcomeScreen />
+            <>
+              <WelcomeScreen />
+              {documents.length > 0 && (
+                <PopularQuestions
+                  questions={popularQuestions}
+                  onSelect={sendMessage}
+                  isLoading={isGenerating}
+                />
+              )}
+            </>
           ) : (
             <ChatArea messages={messages} />
           )}

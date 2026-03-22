@@ -269,11 +269,15 @@ export function handleEndSession(req: Request, res: Response): void {
         const documentIds = session.documents.map(d => d.id);
         clearDocumentCache(documentIds);
         
+        // Clear question bank
+        const { questionBanks } = require('./suggestionsController');
+        questionBanks.delete(sessionId);
+        
         // Clear BOTH documents AND messages
         session.documents = [];
         session.messages = [];
         sessionStore.set(sessionId, session);
-        console.log(`[EndSession] Cleared documents, messages, and cache for session ${sessionId}`);
+        console.log(`[EndSession] Cleared documents, messages, cache, and question bank for session ${sessionId}`);
     }
     
     res.json({ success: true, message: 'Session memory cleared' });

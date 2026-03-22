@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
+import QuestionSuggestions from './QuestionSuggestions';
+import { useQuestionSuggestions } from '../hooks/useQuestionSuggestions';
 
 // Custom Spotify UI Icons
 const PlusIcon = () => (
@@ -47,6 +49,10 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
     const [fade, setFade] = useState(true);
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<any>(null);
+    
+    // Question suggestions
+    const { suggestions, getSuggestions, isLoading: suggestionsLoading } = useQuestionSuggestions();
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -177,6 +183,20 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
 
     return (
         <form className="chat-input" onSubmit={handleSubmit} id="chat-input-form">
+            {/* Question Suggestions Dropdown */}
+            {showSuggestions && (
+                <QuestionSuggestions
+                    suggestions={suggestions}
+                    onSelect={(question) => {
+                        setInput(question);
+                        setShowSuggestions(false);
+                        textareaRef.current?.focus();
+                    }}
+                    isLoading={suggestionsLoading}
+                    inputValue={input}
+                />
+            )}
+            
             <div className="chat-input__container">
                 <input
                     type="file"
@@ -202,8 +222,23 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
                     className="chat-input__textarea"
                     placeholder="Ask me anything about your textbooks..."
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setInput(value);
+                        // Get suggestions as user types
+                        if (value.length >= 2) {
+                            getSuggestions(value, 5);
+                            setShowSuggestions(true);
+                        } else {
+                            setShowSuggestions(false);
+                        }
+                    }}
                     onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                        if (input.length >= 2) {
+                            setShowSuggestions(true);
+                        }
+                    }}
                     disabled={disabled}
                     rows={1}
                     id="chat-input-textarea"

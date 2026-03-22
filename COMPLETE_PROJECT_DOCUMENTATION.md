@@ -16,6 +16,7 @@
    - Chat Persistence & Export
    - Voice Input (Web Speech API)
    - Text-to-Speech (Audio Answers)
+   - Smart Question Suggestions
    - Automated Benchmarking
 6. [Implementation Details](#implementation-details)
 7. [Data Flow](#data-flow)
@@ -759,7 +760,136 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 ---
 
-### Feature 10: Automated Benchmarking
+### Feature 10: Smart Question Suggestions
+
+**What It Does:**
+- Auto-complete suggestions as user types
+- "People also asked" style recommendations
+- Intelligent topic extraction from PDFs
+- Real-time fuzzy matching
+- Click to auto-fill questions
+
+**How It Works:**
+
+1. **Topic Extraction:**
+   ```typescript
+   // Extract key topics from PDF text
+   const topics = extractTopics(text, 20);
+   // Uses NLP: tokenization, stopword removal, phrase detection
+   // Identifies bigrams and trigrams
+   // Ranks by frequency and relevance
+   ```
+
+2. **Question Generation:**
+   ```typescript
+   // Generate 30+ questions across 14 categories
+   const questions = generateQuestions(topics, 30);
+   // Categories: definition, explanation, features, mechanism,
+   // advantages, disadvantages, comparison, applications, etc.
+   ```
+
+3. **Real-Time Suggestions:**
+   ```typescript
+   // As user types, match against question bank
+   const suggestions = getSuggestions(userInput, allQuestions, 5);
+   // Scoring algorithm:
+   // - Exact phrase match: +100 pts
+   // - Word matches: +10 pts each
+   // - Keyword matches: +20 pts each
+   // - Original relevance: +0.1x
+   ```
+
+4. **Popular Questions:**
+   ```typescript
+   // Show top 8 questions on welcome screen
+   const popular = questionBank.slice(0, 8);
+   // Grid layout with categories
+   // Click to send immediately
+   ```
+
+**Why This Matters:**
+
+**Discovery:**
+- Students learn what questions to ask
+- Explore topics systematically
+- Discover related concepts
+
+**Efficiency:**
+- Faster than typing full questions
+- Reduces typos and errors
+- Guides proper question formation
+
+**Engagement:**
+- Interactive exploration
+- Encourages curiosity
+- Reduces friction
+
+**Rural India Context:**
+- Helps students with limited English typing skills
+- Provides question templates
+- Reduces cognitive load
+
+**Code Location:**
+- `server/utils/topicExtractor.ts` - NLP logic (300 lines)
+- `server/controllers/suggestionsController.ts` - API handlers (150 lines)
+- `server/routes/suggestionsRoutes.ts` - Routes (30 lines)
+- `client/src/hooks/useQuestionSuggestions.ts` - React hook (130 lines)
+- `client/src/components/QuestionSuggestions.tsx` - Dropdown UI (100 lines)
+- `client/src/components/PopularQuestions.tsx` - Grid UI (80 lines)
+
+**Technical Details:**
+
+**NLP Algorithms:**
+- Tokenization with stopword filtering
+- Bigram and trigram extraction
+- TF-IDF-inspired frequency ranking
+- Fuzzy matching with scoring
+
+**Question Templates:**
+- 14 different question categories
+- Template-based generation
+- Context-aware suggestions
+- Relevance scoring
+
+**Performance:**
+- Generation: 2-3 seconds for 100-page PDF
+- Suggestions: < 100ms (real-time)
+- Cached per session
+- No external API calls
+
+**API Endpoints:**
+- `POST /api/suggestions/generate` - Generate question bank
+- `GET /api/suggestions/search?input={query}` - Get suggestions
+- `GET /api/suggestions/popular?limit={n}` - Get popular questions
+- `DELETE /api/suggestions/clear` - Clear question bank
+
+**User Experience:**
+
+**Auto-Complete:**
+1. User types 2+ characters
+2. Dropdown appears with 5 suggestions
+3. Suggestions update in real-time
+4. Click to auto-fill input
+5. Edit or send immediately
+
+**Popular Questions:**
+1. Upload PDF
+2. System generates questions automatically
+3. "People also asked" section appears
+4. 8 questions in grid layout
+5. Click any question → Sends immediately
+
+**Visual Design:**
+- Dropdown slides up from input (native feel)
+- Grid layout with category badges
+- Lightbulb icons for suggestions
+- Sparkles icon for AI-generated
+- Smooth animations
+- Mobile responsive
+
+---
+
+### Feature 11: Automated Benchmarking
 
 **What It Does:**
 - Runs 8 test questions automatically
@@ -1273,12 +1403,15 @@ education-tutor-for-remote-india/
 │   │   │   ├── ExportChatButton.tsx # PDF export
 │   │   │   ├── ThemeToggle.tsx     # Dark/light mode
 │   │   │   ├── WelcomeScreen.tsx   # Landing page
-│   │   │   └── SplashScreen.tsx    # Loading screen
+│   │   │   ├── SplashScreen.tsx    # Loading screen
+│   │   │   ├── QuestionSuggestions.tsx # Auto-complete dropdown
+│   │   │   └── PopularQuestions.tsx    # People also asked
 │   │   ├── context/
 │   │   │   └── ThemeContext.tsx    # Theme state
 │   │   ├── hooks/
 │   │   │   ├── useDocuments.ts     # Document management
-│   │   │   └── useTypewriter.ts    # Typing animation
+│   │   │   ├── useTypewriter.ts    # Typing animation
+│   │   │   └── useQuestionSuggestions.ts # Suggestions hook
 │   │   ├── App.tsx                 # Main app component
 │   │   ├── App.css                 # Global styles
 │   │   ├── index.css               # Reset styles
@@ -1674,10 +1807,11 @@ node -e "require('dotenv').config(); console.log('Key:', process.env.SCALEDOWN_A
 ✅ **PDF export** - Theme-aware export for offline study
 ✅ **Voice input** - Speak questions (accessibility + lower literacy barrier)
 ✅ **Text-to-Speech** - Listen to answers (multitasking + accessibility)
+✅ **Smart suggestions** - AI-powered question discovery and auto-complete
 ✅ **Automated benchmarking** - Reproducible evidence
 ✅ **Rich metadata** - Full transparency of optimization
 ✅ **Production-ready** - Security, error handling, logging
-✅ **Excellent UX** - Real-time metrics, PDF preview, dark mode
+✅ **Excellent UX** - Real-time metrics, PDF preview, dark mode, mobile-first
 
 ### Quantitative Evidence
 

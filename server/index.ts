@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import pdfRoutes from './routes/pdfRoutes';
+import suggestionsRoutes from './routes/suggestionsRoutes';
 
 const app = express();
 const port: number = Number(process.env.PORT) || 3000;
@@ -41,6 +42,7 @@ app.use(session({
 // --- Routes ---
 
 app.use('/api', pdfRoutes);
+app.use('/api/suggestions', suggestionsRoutes);
 
 // Health check
 app.get('/', (_req, res) => {
