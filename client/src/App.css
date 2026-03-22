@@ -1089,9 +1089,36 @@ body {
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--text-muted);
-    cursor: not-allowed;
+    color: var(--text-tertiary);
+    cursor: pointer;
     transition: all var(--transition-fast);
+}
+
+.chat-input__mic-btn:hover:not(:disabled) {
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.chat-input__mic-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.chat-input__mic-btn.listening {
+    color: var(--accent-danger);
+    background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
+    animation: pulse-mic 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-mic {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
 }
 
 .chat-input__spinner {

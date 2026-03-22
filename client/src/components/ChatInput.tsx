@@ -45,6 +45,64 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [taglineIndex, setTaglineIndex] = useState(0);
     const [fade, setFade] = useState(true);
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<any>(null);
+
+    // Initialize Speech Recognition
+    useEffect(() => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+            try {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-IN'; // Indian English
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onresult = (event: any) => {
+                    const transcript = event.results[0][0].transcript;
+                    // Append to existing text instead of replacing
+                    setInput(prev => {
+                        const separator = prev.trim() ? ' ' : '';
+                        return prev + separator + transcript;
+                    });
+                    setIsListening(false);
+                };
+
+                recognition.onerror = (event: any) => {
+                    console.error('Speech recognition error:', event.error);
+                    if (event.error === 'not-allowed') {
+                        alert('Microphone access denied. Please allow microphone permissions.');
+                    } else if (event.error === 'no-speech') {
+                        alert('No speech detected. Please try again.');
+                    }
+                    setIsListening(false);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current = recognition;
+                console.log('✅ Speech Recognition initialized');
+            } catch (error) {
+                console.error('Failed to initialize Speech Recognition:', error);
+            }
+        } else {
+            console.warn('❌ Speech Recognition not available');
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.abort();
+                } catch (e) {
+                    // Ignore abort errors
+                }
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -80,6 +138,32 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
             onUpload(e.target.files);
             // Reset input so the same files can't get stuck if selected again
             e.target.value = '';
+        }
+    };
+
+    const handleVoiceInput = () => {
+        if (!recognitionRef.current) {
+            // Check if it's a security issue (HTTP instead of HTTPS)
+            if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+                alert('Voice input requires HTTPS for security. It works on localhost or HTTPS sites.');
+            } else {
+                alert('Voice input is not supported in your browser. Try Chrome, Edge, or Safari with HTTPS.');
+            }
+            return;
+        }
+
+        if (isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        } else {
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (error) {
+                console.error('Failed to start speech recognition:', error);
+                alert('Could not start voice input. Make sure microphone permissions are granted.');
+                setIsListening(false);
+            }
         }
     };
 
@@ -127,10 +211,11 @@ export default function ChatInput({ onSend, disabled, onUpload, isUploading }: C
                 <div className="chat-input__actions">
                     <button
                         type="button"
-                        className="chat-input__mic-btn"
-                        title="Voice input (coming soon)"
+                        className={`chat-input__mic-btn ${isListening ? 'listening' : ''}`}
+                        title={isListening ? "Stop listening" : "Voice input (Speak in English)"}
                         id="mic-btn"
-                        disabled
+                        onClick={handleVoiceInput}
+                        disabled={disabled}
                     >
                         <MicIcon />
                     </button>

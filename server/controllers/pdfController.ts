@@ -100,14 +100,35 @@ function tokenize(text: string): Set<string> {
     );
 }
 
-function scoreSection(questionTokens: Set<string>, sectionText: string, title: string): number {
+function scoreSection(questionTokens: Set<string>, sectionText: string, title: string, originalQuestion: string = ''): number {
     const sectionTokens = tokenize(`${title} ${sectionText.slice(0, 4000)}`);
+    const sectionLower = `${title} ${sectionText}`.toLowerCase();
     let overlap = 0;
+    
+    // Count token overlaps
     for (const token of questionTokens) {
         if (sectionTokens.has(token)) {
             overlap++;
         }
     }
+    
+    // Bonus points for exact word matches (important for names that might be filtered by tokenizer)
+    // Extract words from original question
+    if (originalQuestion) {
+        const questionWords = originalQuestion
+            .replace(/[?.,!]/g, '')
+            .split(/\s+/)
+            .filter(w => w.length > 2); // Keep short names like "who"
+        
+        for (const word of questionWords) {
+            const wordLower = word.toLowerCase();
+            // Check if this exact word appears in section (case-insensitive)
+            if (sectionLower.includes(wordLower) && wordLower.length > 3) {
+                overlap += 2; // Bonus for exact word match (helps with names)
+            }
+        }
+    }
+    
     return overlap;
 }
 
@@ -369,13 +390,20 @@ export async function handleChat(req: Request, res: Response): Promise<void> {
                 sectionId: section.id,
                 sectionTitle: section.title,
                 sectionText: section.text,
-                score: scoreSection(questionTokens, section.text, section.title),
+                score: scoreSection(questionTokens, section.text, section.title, question),
             }))
         );
 
         const rankedSections = sectionCandidates
             .sort((a, b) => b.score - a.score)
             .slice(0, MAX_SECTIONS_FOR_SCALEDOWN);
+
+        // Debug logging to see what's being selected
+        console.log(`[Chat] Question tokens:`, Array.from(questionTokens));
+        console.log(`[Chat] Top 5 ranked sections:`);
+        rankedSections.slice(0, 5).forEach((s, i) => {
+            console.log(`  ${i+1}. ${s.fileName} | ${s.sectionTitle} (score: ${s.score})`);
+        });
 
         const selectedSections = rankedSections.some((section) => section.score >= 2)
             ? rankedSections.filter((section) => section.score >= 2).slice(0, MAX_SELECTED_RELEVANT_SECTIONS)
@@ -607,7 +635,7 @@ export function handleBenchmark(req: Request, res: Response): void {
             fileName: doc.fileName,
             sectionTitle: section.title,
             sectionText: section.text,
-            score: scoreSection(questionTokens, section.text, section.title),
+            score: scoreSection(questionTokens, section.text, section.title, question),
         }))
     );
 

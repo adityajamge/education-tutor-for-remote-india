@@ -14,6 +14,7 @@
    - Rich Metadata
    - Frontend Visualization
    - Chat Persistence & Export
+   - Voice Input (Web Speech API)
    - Automated Benchmarking
 6. [Implementation Details](#implementation-details)
 7. [Data Flow](#data-flow)
@@ -591,7 +592,87 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 ---
 
-### Feature 8: Automated Benchmarking
+### Feature 8: Voice Input (Web Speech API)
+
+**What It Does:**
+- Speak questions instead of typing
+- Uses browser's built-in speech recognition
+- Supports Indian English (en-IN)
+- Visual feedback when listening
+
+**How It Works:**
+
+1. **Initialization:**
+   ```typescript
+   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+   const recognition = new SpeechRecognition();
+   recognition.lang = 'en-IN'; // Indian English
+   recognition.continuous = false;
+   recognition.interimResults = false;
+   ```
+
+2. **Start Listening:**
+   - User clicks microphone button
+   - Browser requests microphone permission
+   - Recognition starts
+   - Button shows pulsing red animation
+
+3. **Speech Processing:**
+   ```typescript
+   recognition.onresult = (event) => {
+     const transcript = event.results[0][0].transcript;
+     setInput(transcript); // Fills textarea
+     setIsListening(false);
+   };
+   ```
+
+4. **Auto-Stop:**
+   - Stops after user finishes speaking
+   - Transcript appears in input field
+   - User can edit before sending
+
+**Browser Support:**
+- ✅ Chrome/Edge (webkitSpeechRecognition)
+- ✅ Safari (SpeechRecognition)
+- ❌ Firefox (not supported yet)
+
+**Why This Matters:**
+
+**Accessibility:**
+- Students with dyslexia can speak questions
+- Faster than typing on mobile
+- Hands-free operation
+
+**Lower Literacy Barrier:**
+- Rural India: Many students struggle with English typing
+- Speaking is more natural than writing
+- Reduces friction in asking questions
+
+**Modern UX:**
+- Voice is the future of interaction
+- Feels like talking to a real tutor
+- Engaging and intuitive
+
+**Code Location:**
+- `client/src/components/ChatInput.tsx` - Voice recognition logic
+- `client/src/App.css` - Listening animation
+
+**Technical Details:**
+- Uses Web Speech API (no external dependencies)
+- Zero cost (runs in browser)
+- Privacy-friendly (browser handles speech)
+- Instant transcription
+- Fallback: Shows alert if not supported
+
+**Visual Feedback:**
+- Microphone button pulses red when listening
+- Smooth animation (1.5s cycle)
+- Clear start/stop states
+- Tooltip shows "Stop listening" when active
+
+---
+
+### Feature 9: Automated Benchmarking
 
 **What It Does:**
 - Runs 8 test questions automatically
@@ -1504,6 +1585,7 @@ node -e "require('dotenv').config(); console.log('Key:', process.env.SCALEDOWN_A
 ✅ **Query caching** - Additional 80-90% savings for repeated queries
 ✅ **Chat persistence** - Messages survive browser close/refresh
 ✅ **PDF export** - Theme-aware export for offline study
+✅ **Voice input** - Speak questions (accessibility + lower literacy barrier)
 ✅ **Automated benchmarking** - Reproducible evidence
 ✅ **Rich metadata** - Full transparency of optimization
 ✅ **Production-ready** - Security, error handling, logging
