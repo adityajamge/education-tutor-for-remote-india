@@ -54,7 +54,6 @@ function AppContent() {
     popularQuestions, 
     generateQuestions, 
     isGenerating,
-    fetchPopularQuestions 
   } = useQuestionSuggestions();
 
   // Generate questions when documents are uploaded

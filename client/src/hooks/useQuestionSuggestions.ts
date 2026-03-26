@@ -4,7 +4,7 @@
  * Author: [Teammate 2 Name]
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { API_BASE } from '../config';
 
 interface Suggestion {
