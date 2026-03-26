@@ -12,9 +12,8 @@ import TokenStatsBar from './components/TokenStatsBar';
 import ExportChatButton from './components/ExportChatButton';
 import { useDocuments } from './hooks/useDocuments';
 import { useQuestionSuggestions } from './hooks/useQuestionSuggestions';
+import { API_BASE } from './config';
 import './App.css';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://education-tutor-for-remote-india-backend.onrender.com/api';
 
 interface TokenStats {
   baselineTokens: number;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../config';
 
 export interface Document {
     id: string;
@@ -6,8 +7,6 @@ export interface Document {
     pageCount: number;
     url?: string;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://education-tutor-for-remote-india-backend.onrender.com/api';
 
 export function useDocuments() {
     const [documents, setDocuments] = useState<Document[]>([]);

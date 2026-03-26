@@ -1,4 +1,5 @@
 import type { Document } from '../hooks/useDocuments';
+import { API_BASE } from '../config';
 
 // Custom Spotify UI Icons
 const DocumentIcon = ({ size = 20 }) => (
@@ -43,8 +44,6 @@ interface SidebarProps {
     error?: string | null;
     onViewPdf?: (pdf: { url: string; fileName: string }) => void;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://education-tutor-for-remote-india-backend.onrender.com/api';
 
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen = false, onMobileClose, documents = [], onRemove, onClearSession, error, onViewPdf }: SidebarProps) {
     const handleViewPdf = (doc: Document) => {
