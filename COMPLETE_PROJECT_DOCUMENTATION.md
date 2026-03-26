@@ -760,59 +760,84 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 ---
 
-### Feature 10: Smart Question Suggestions
+### Feature 10: Smart Question Suggestions (AI-Powered)
 
 **What It Does:**
-- Auto-complete suggestions as user types
+- AI-generated context-aware questions from uploaded PDFs
 - "People also asked" style recommendations
-- Intelligent topic extraction from PDFs
+- Auto-complete suggestions as user types
 - Real-time fuzzy matching
-- Click to auto-fill questions
+- Click to auto-fill or send questions instantly
 
 **How It Works:**
 
-1. **Topic Extraction:**
+1. **AI-Powered Question Generation:**
    ```typescript
-   // Extract key topics from PDF text
-   const topics = extractTopics(text, 20);
-   // Uses NLP: tokenization, stopword removal, phrase detection
-   // Identifies bigrams and trigrams
-   // Ranks by frequency and relevance
+   // Send document content to Groq AI (Llama 3.3 70B)
+   const prompt = `Based on this document, generate 15 intelligent questions...`;
+   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+     model: 'llama-3.3-70b-versatile',
+     messages: [{ role: 'user', content: prompt }]
+   });
+   // AI reads content and generates contextual questions
    ```
 
-2. **Question Generation:**
-   ```typescript
-   // Generate 30+ questions across 14 categories
-   const questions = generateQuestions(topics, 30);
-   // Categories: definition, explanation, features, mechanism,
-   // advantages, disadvantages, comparison, applications, etc.
-   ```
+2. **Intelligent Question Types:**
+   - Understanding: "What is the main purpose of..."
+   - Mechanism: "How does X work?"
+   - Explanation: "Explain the concept of..."
+   - Comparison: "Compare X with Y"
+   - Application: "What are the practical uses of..."
+   - Requirements: "What are the prerequisites for..."
 
 3. **Real-Time Suggestions:**
    ```typescript
-   // As user types, match against question bank
+   // As user types, match against AI-generated question bank
    const suggestions = getSuggestions(userInput, allQuestions, 5);
    // Scoring algorithm:
    // - Exact phrase match: +100 pts
    // - Word matches: +10 pts each
    // - Keyword matches: +20 pts each
-   // - Original relevance: +0.1x
    ```
 
 4. **Popular Questions:**
    ```typescript
-   // Show top 8 questions on welcome screen
+   // Show top 8 AI-generated questions on welcome screen
    const popular = questionBank.slice(0, 8);
    // Grid layout with categories
    // Click to send immediately
    ```
 
+**Example Questions Generated:**
+
+**For Resume PDF:**
+- "What projects has this person worked on?"
+- "What technologies does this candidate specialize in?"
+- "Describe the experience with cross-platform development"
+- "What is the MidBrain Antivirus project about?"
+
+**For Apple Developer License:**
+- "What are the key terms of the Apple Developer Program License?"
+- "What restrictions does Apple impose on developers?"
+- "How does the license agreement handle intellectual property?"
+
+**For Textbook:**
+- "What are the main concepts covered in this chapter?"
+- "Explain the relationship between X and Y"
+- "What are the practical applications of this theory?"
+
 **Why This Matters:**
+
+**Context-Aware:**
+- Questions are specific to actual document content
+- No generic "What is apple?" nonsense
+- Understands document type (resume, legal, textbook)
+- Natural and conversational
 
 **Discovery:**
 - Students learn what questions to ask
 - Explore topics systematically
-- Discover related concepts
+- Discover related concepts they might miss
 
 **Efficiency:**
 - Faster than typing full questions
@@ -826,39 +851,41 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 **Rural India Context:**
 - Helps students with limited English typing skills
-- Provides question templates
+- Provides intelligent question templates
 - Reduces cognitive load
+- Shows what's possible to ask
 
 **Code Location:**
-- `server/utils/topicExtractor.ts` - NLP logic (300 lines)
-- `server/controllers/suggestionsController.ts` - API handlers (150 lines)
+- `server/controllers/suggestionsController.ts` - AI generation + API handlers (200 lines)
 - `server/routes/suggestionsRoutes.ts` - Routes (30 lines)
+- `server/utils/topicExtractor.ts` - Fuzzy matching logic (150 lines)
 - `client/src/hooks/useQuestionSuggestions.ts` - React hook (130 lines)
 - `client/src/components/QuestionSuggestions.tsx` - Dropdown UI (100 lines)
 - `client/src/components/PopularQuestions.tsx` - Grid UI (80 lines)
 
 **Technical Details:**
 
-**NLP Algorithms:**
-- Tokenization with stopword filtering
-- Bigram and trigram extraction
-- TF-IDF-inspired frequency ranking
-- Fuzzy matching with scoring
+**AI Generation:**
+- Uses Groq API (Llama 3.3 70B) - same as main chat
+- Processes first 8000 characters of document
+- Generates 15 contextual questions
+- Temperature: 0.7 (balanced creativity)
+- Fallback questions if AI fails
 
-**Question Templates:**
-- 14 different question categories
-- Template-based generation
-- Context-aware suggestions
-- Relevance scoring
+**Fuzzy Matching:**
+- Keyword extraction from questions
+- Real-time scoring as user types
+- Exact phrase matching prioritized
+- Word-level matching for flexibility
 
 **Performance:**
-- Generation: 2-3 seconds for 100-page PDF
+- Generation: 2-4 seconds (AI processing)
 - Suggestions: < 100ms (real-time)
 - Cached per session
-- No external API calls
+- Uses existing Groq API (no extra cost)
 
 **API Endpoints:**
-- `POST /api/suggestions/generate` - Generate question bank
+- `POST /api/suggestions/generate` - Generate AI question bank
 - `GET /api/suggestions/search?input={query}` - Get suggestions
 - `GET /api/suggestions/popular?limit={n}` - Get popular questions
 - `DELETE /api/suggestions/clear` - Clear question bank
@@ -867,16 +894,16 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 
 **Auto-Complete:**
 1. User types 2+ characters
-2. Dropdown appears with 5 suggestions
+2. Dropdown appears with 5 AI-matched suggestions
 3. Suggestions update in real-time
 4. Click to auto-fill input
 5. Edit or send immediately
 
 **Popular Questions:**
 1. Upload PDF
-2. System generates questions automatically
+2. AI analyzes content (2-4 seconds)
 3. "People also asked" section appears
-4. 8 questions in grid layout
+4. 8 intelligent questions in grid layout
 5. Click any question → Sends immediately
 
 **Visual Design:**
@@ -886,6 +913,15 @@ Selected: Chapter 2 only (2597 → 1770 tokens, 32% savings)
 - Sparkles icon for AI-generated
 - Smooth animations
 - Mobile responsive
+
+**Why AI-Powered is Better:**
+- ✅ Context-aware and meaningful
+- ✅ Understands document type and content
+- ✅ Natural, conversational questions
+- ✅ Production-quality feature
+- ✅ Impresses judges with AI capabilities
+- ❌ No more "What is pune gmail?" nonsense
+- ❌ No generic template-based questions
 
 ---
 

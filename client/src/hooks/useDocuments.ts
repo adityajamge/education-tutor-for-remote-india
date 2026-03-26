@@ -7,7 +7,7 @@ export interface Document {
     url?: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://education-tutor-for-remote-india-backend.onrender.com/api';
 
 export function useDocuments() {
     const [documents, setDocuments] = useState<Document[]>([]);

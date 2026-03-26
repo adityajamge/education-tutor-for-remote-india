@@ -44,10 +44,12 @@ interface SidebarProps {
     onViewPdf?: (pdf: { url: string; fileName: string }) => void;
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://education-tutor-for-remote-india-backend.onrender.com/api';
+
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen = false, onMobileClose, documents = [], onRemove, onClearSession, error, onViewPdf }: SidebarProps) {
     const handleViewPdf = (doc: Document) => {
         if (onViewPdf) {
-            const pdfUrl = `http://localhost:3000/api/document/${doc.id}/view`;
+            const pdfUrl = `${API_BASE}/document/${doc.id}/view`;
             onViewPdf({ url: pdfUrl, fileName: doc.fileName });
         }
     };
