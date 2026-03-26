@@ -33,6 +33,10 @@ export function useQuestionSuggestions() {
                 credentials: 'include',
             });
 
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
 
             if (!data.success) {
@@ -74,6 +78,12 @@ export function useQuestionSuggestions() {
                 }
             );
 
+            if (!response.ok) {
+                console.error(`[Suggestions] Failed to get suggestions: ${response.status} ${response.statusText}`);
+                setSuggestions([]);
+                return;
+            }
+
             const data = await response.json();
 
             if (data.success) {
@@ -101,6 +111,10 @@ export function useQuestionSuggestions() {
                     credentials: 'include',
                 }
             );
+
+            if (!response.ok) {
+                return;
+            }
 
             const data = await response.json();
 
