@@ -16,34 +16,51 @@ if (isProduction && !process.env.SESSION_SECRET) {
 
 const sessionSecret = process.env.SESSION_SECRET || 'edututor-dev-secret-key';
 
+console.log(`[Server] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[Server] isProduction: ${isProduction}`);
+
 // --- CORS Configuration ---
-// For production (Vercel -> Render), allow credentials from any origin
-// For development, only allow localhost:5173
 const corsOptions = isProduction
-  ? {
-    origin: true, // Allow any origin in production
-    credentials: true,
-  }
-  : {
-    origin: frontendOrigin,
-    credentials: true,
-  };
+  ? { origin: true, credentials: true }
+  : { origin: frontendOrigin, credentials: true };
 
 app.use(cors(corsOptions));
 
-// Parse JSON request bodies
+// --- JSON parser with better error handling ---
 app.use(express.json());
 
-// Session middleware — gives each user a unique session ID
+// Error handler for JSON parsing
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err.name === 'SyntaxError' && err.statusCode === 400 && 'body' in err) {
+    console.log('[JSON Error] Malformed JSON received');
+    console.log('[JSON Error] Raw body:', err.message);
+    
+    // Try to fix common issues
+    const rawBody = err.message.replace("Unexpected token '", "").replace("' at position ", ":").split(":")[0];
+    console.log('[JSON Error] Extracted:', rawBody);
+    
+    res.status(400).json({ 
+      success: false, 
+      error: 'Invalid JSON format. Please refresh and try again.',
+      debug: err.message 
+    });
+    return;
+  }
+  next(err);
+});
+
+app.use(express.urlencoded({ extended: true }));
+
+// --- Session middleware ---
 app.use(session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: true,
   cookie: {
-    maxAge: 30 * 60 * 1000, // 30 minutes
+    maxAge: 30 * 60 * 1000,
     httpOnly: true,
-    sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies
-    secure: isProduction, // Required for cross-site cookies
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
   },
 }));
 
