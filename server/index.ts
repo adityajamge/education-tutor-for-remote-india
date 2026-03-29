@@ -16,13 +16,20 @@ if (isProduction && !process.env.SESSION_SECRET) {
 
 const sessionSecret = process.env.SESSION_SECRET || 'edututor-dev-secret-key';
 
-// --- Middleware ---
+// --- CORS Configuration ---
+// For production (Vercel -> Render), allow credentials from any origin
+// For development, only allow localhost:5173
+const corsOptions = isProduction
+  ? {
+    origin: true, // Allow any origin in production
+    credentials: true,
+  }
+  : {
+    origin: frontendOrigin,
+    credentials: true,
+  };
 
-// Allow frontend (Vite dev server) to communicate with backend
-app.use(cors({
-  origin: frontendOrigin,
-  credentials: true, // Required for session cookies
-}));
+app.use(cors(corsOptions));
 
 // Parse JSON request bodies
 app.use(express.json());
@@ -35,7 +42,8 @@ app.use(session({
   cookie: {
     maxAge: 30 * 60 * 1000, // 30 minutes
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies
+    secure: isProduction, // Required for cross-site cookies
   },
 }));
 
