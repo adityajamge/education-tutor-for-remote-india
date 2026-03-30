@@ -19,6 +19,11 @@ const sessionSecret = process.env.SESSION_SECRET || 'edututor-dev-secret-key';
 console.log(`[Server] NODE_ENV: ${process.env.NODE_ENV}`);
 console.log(`[Server] isProduction: ${isProduction}`);
 
+// --- Trust Proxy (required for Render / any reverse-proxy deployment) ---
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
 // --- CORS Configuration ---
 const corsOptions = isProduction
   ? { origin: true, credentials: true }
@@ -26,23 +31,19 @@ const corsOptions = isProduction
 
 app.use(cors(corsOptions));
 
-// --- JSON parser with better error handling ---
+// --- JSON parser ---
 app.use(express.json());
 
-// Error handler for JSON parsing
+// Error handler for JSON parsing (compatible with Express 5 body-parser)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err.name === 'SyntaxError' && err.statusCode === 400 && 'body' in err) {
-    console.log('[JSON Error] Malformed JSON received');
-    console.log('[JSON Error] Raw body:', err.message);
-    
-    // Try to fix common issues
-    const rawBody = err.message.replace("Unexpected token '", "").replace("' at position ", ":").split(":")[0];
-    console.log('[JSON Error] Extracted:', rawBody);
-    
-    res.status(400).json({ 
-      success: false, 
-      error: 'Invalid JSON format. Please refresh and try again.',
-      debug: err.message 
+  if (err.type === 'entity.parse.failed' || (err.name === 'SyntaxError' && (err.status === 400 || err.statusCode === 400))) {
+    console.error('[JSON Error] Malformed JSON received');
+    console.error('[JSON Error] URL:', req.originalUrl);
+    console.error('[JSON Error] Content-Type:', req.headers['content-type']);
+    console.error('[JSON Error] Message:', err.message);
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON in request body.'
     });
     return;
   }
